@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use toml_edit::{Table, Item, Document};
+use toml_edit::{Document, Item, Table};
 
 use cargo_fmt::package_order::TomlSection;
 
@@ -31,12 +31,10 @@ enum Heading {
 }
 
 /// Returns a sorted toml `Document`.
-pub fn sort_toml(
-    toml: &mut Document,
-) {
+pub fn sort_toml(toml: &mut Document) {
     let mut ordering = TomlSection::manifest_spec();
     let mut ordering_1 = TomlSection::manifest_spec();
-     
+
     let ordering_ref = ordering_1.iter().map(|k| k.as_str()).collect::<Vec<_>>();
     let matcher = Matcher {
         heading: ordering_ref.as_slice(),
@@ -45,7 +43,7 @@ pub fn sort_toml(
 
     let mut first_table = None;
     let mut heading_order: BTreeMap<(usize, String), Vec<Heading>> = BTreeMap::new();
-   
+
     for (idx, (head, item)) in toml.iter_mut().enumerate() {
         if !matcher.heading.contains(&head.get()) {
             if !ordering.contains(&head.get().to_string()) && !ordering.is_empty() {
@@ -62,7 +60,7 @@ pub fn sort_toml(
                 }
 
                 let headings = heading_order.entry((idx, head.to_string())).or_default();
-               
+
                 // Push a `Heading::Complete` here incase the tables are ordered
                 // [heading.segs]
                 // [heading]
@@ -110,8 +108,7 @@ fn sort_by_ordering(
             tab.set_position(idx);
             idx += 1;
             walk_tables_set_position(tab, &mut idx)
-        } else if let Some(arrtab) = toml.as_table_mut()[heading].as_array_of_tables_mut()
-        {
+        } else if let Some(arrtab) = toml.as_table_mut()[heading].as_array_of_tables_mut() {
             for tab in arrtab.iter_mut() {
                 tab.set_position(idx);
                 idx += 1;
@@ -153,7 +150,10 @@ fn gather_headings(table: &Table, keys: &mut Vec<Heading>, depth: usize) {
     for (head, item) in table.iter() {
         match item {
             Item::Value(_) => {
-                if keys.last().map_or(false, |h| matches!(h, Heading::Complete(_))) {
+                if keys
+                    .last()
+                    .map_or(false, |h| matches!(h, Heading::Complete(_)))
+                {
                     continue;
                 }
 

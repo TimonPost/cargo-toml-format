@@ -1,6 +1,6 @@
 use toml_edit::{Document, Item, Key, Table, Value};
 
-use crate::formatting::{KeyQuoteTrimmer, KeyTrimmer, OrderSections, TomlFormatter, OrderSectionsNew};
+use crate::formatting::{KeyQuoteTrimmer, KeyTrimmer, OrderSections, TomlFormatter};
 use crate::{
     formatting::{AppendLineAfterSection, OrderPackageSection, SectionKeyNameTrimmer},
     package_order::TomlSort,
@@ -41,7 +41,7 @@ impl CargoToml {
         }
 
         if config.order_sections {
-            OrderSectionsNew
+            OrderSections
                 .format_toml(&mut self.toml_document, &config)
                 .unwrap();
         }

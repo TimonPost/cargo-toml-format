@@ -1,11 +1,11 @@
-use std::{cmp::Ordering, str::FromStr};
+use std::{cmp::Ordering, str::FromStr, collections::HashMap};
 
 use strum::EnumProperty;
 use toml_edit::{Decor, Document, Item, Key, Table};
 
 use crate::{
     package_order::{PackageOrder, TomlSection},
-    toml_config::TomlFormatConfig, sort,
+    toml_config::TomlFormatConfig, 
 };
 pub trait TomlFormatter {
     fn format_toml(
@@ -13,24 +13,6 @@ pub trait TomlFormatter {
         toml_document: &mut Document,
         config: &TomlFormatConfig,
     ) -> anyhow::Result<()>;
-}
-
-pub struct OrderSectionsNew;
-
-impl TomlFormatter for OrderSectionsNew {
-    fn format_toml(
-        &self,
-        toml_document: &mut Document,
-        config: &TomlFormatConfig,
-    ) -> anyhow::Result<()> {
-        if !config.order_sections {
-            return Ok(());
-        }
-
-        sort::sort_toml(toml_document);
-        
-        Ok(())
-    }
 }
 
 pub struct OrderSections;
@@ -45,50 +27,73 @@ impl TomlFormatter for OrderSections {
             return Ok(());
         }
 
-        let sections = toml_document.as_table_mut();
+        let mut section_tables = HashMap::<String, (Key, Table)>::new();
+        let all_sections = TomlSection::manifest_spec();
+    
+        // Collect all section tables
+        toml_document.iter().for_each(|(section_key, _)| {          
+            let (section_key, section_item) = toml_document.get_key_value(section_key).unwrap();
+            let section_table = section_item.as_table().unwrap();
 
-        let mut positions = Vec::new();
-
-        // First store positions of all section tables.
-        for (_, t) in sections.iter() {
-            positions.push(
-                t.as_table()
-                    .ok_or(anyhow::anyhow!("Section was not a table."))?
-                    .position()
-                    .ok_or(anyhow::anyhow!("Section had no position"))?,
-            );
-        }
-
-        // Then, sort the sections by their order.
-        sections.sort_values_by(|key_1, _, key_2, _| {                  
-            let order_1 = TomlSection::from_str(key_1.get());
-
-            let order_2 = TomlSection::from_str(key_2.get());
-
-            let key_1_order = order_1
-                .unwrap()
-                .get_str("order")
-                .expect("order should be defined in enum")
-                .parse::<u8>()
-                .expect("order should be a u8 integer");
-            let key_2_order = order_2
-                .unwrap()
-                .get_str("order")
-                .expect("order should be defined in enum")
-                .parse::<u8>()
-                .expect("order should be a u8 integer");
-
-            key_1_order.cmp(&key_2_order)
+            section_tables.insert(section_key.get().to_string(), (section_key.clone(), section_table.clone()));
         });
 
-        // Finally, update the positions of the sorted elements to match the correct old index positions.
-        for (i, (_, t)) in sections.iter_mut().enumerate() {
-            t.as_table_mut()
-                .as_mut()
-                .ok_or(anyhow::anyhow!("Section was not a table."))?
-                .set_position(positions[i]);
-        }
+        // Clear the document, lets sort the tables and add them back with their new positions.
+        toml_document.clear();
 
+        let mut idx = 0;
+        
+        // Iterate tables as they should be ordered.
+        for ordered_section in all_sections {
+            // Process the table if it exists within the document.
+            if let Some((section_key, section_table)) = section_tables.get(&ordered_section) {                        
+                let mut new_table = section_table.clone();
+
+                // Thee possibilities:
+                // [section] and [section.sub] (both section and sub table have positions)
+                // [section] (section has position)
+                // [section.sub] (section does not and sub table does have a position)
+
+                // When parent has position, assign its new index.
+                if new_table.position().is_some() {      
+                    idx += 1;
+                    new_table.set_position(idx);
+                }        
+                
+                // Add table back to the document.
+                toml_document.insert(section_key.get(), Item::Table(new_table.clone()));
+                    
+                let new_table = if let Some((mut k,v)) = toml_document.get_key_value_mut(section_key.get()) {
+                    k.decor_mut().set_prefix(section_key.decor().prefix().unwrap().to_string());
+                    k.decor_mut().set_suffix(section_key.decor().suffix().unwrap().to_string());
+                    v.as_table_mut().unwrap()
+                } else {
+                    panic!();
+                };
+            
+                let section_has_pos = new_table.position().is_some();
+
+                // Iterate the sub tables and see if they need new indexes.
+                // TODO: add alphabetical sort.
+                new_table.iter_mut().for_each(|(recursive_item_key,recursive_item)| {            
+                    // Only tables have positions.
+                    if let Some(table) = recursive_item.as_table_mut() {                    
+                        let subtable_has_pos = table.position().is_some();
+
+                        if (subtable_has_pos && section_has_pos) || (subtable_has_pos && !section_has_pos)  {  
+                            idx += 1;             
+                            table.set_position(idx);           
+                        } else if !subtable_has_pos && !section_has_pos {   
+                            // Both section and sub table have no positions.   
+                            panic!("can not occur");
+                        } else if !subtable_has_pos && section_has_pos {          
+                            // Sub table does not have any position.
+                        }
+                        else{panic!("Not possible")}  
+                    } 
+                });        
+            }           
+        }
         Ok(())
     }
 }
