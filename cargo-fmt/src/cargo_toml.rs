@@ -1,6 +1,6 @@
 use toml_edit::{Document, Item, Key, Table, Value};
 
-use crate::formatting::{KeyQuoteTrimmer, KeyTrimmer, OrderSections, TomlFormatter};
+use crate::formatting::{KeyQuoteTrimmer, KeyTrimmer, OrderSections, TomlFormatter, AddSpaceBetweenAssignments};
 use crate::{
     formatting::{AppendLineAfterSection, OrderPackageSection, SectionKeyNameTrimmer},
     package_order::TomlSort,
@@ -69,6 +69,10 @@ impl CargoToml {
             KeyQuoteTrimmer
                 .format_toml(&mut self.toml_document, &config)
                 .unwrap();
+        }
+
+        if config.space_between_assignment {
+            AddSpaceBetweenAssignments.format_toml(&mut self.toml_document, config).unwrap();
         }
     }
 

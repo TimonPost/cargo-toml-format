@@ -127,32 +127,32 @@ fn trims_quotes_from_keys() {
 fn space_between_assignments() {
     const BEFORE_3: &str = r#"[a]
     a="a" # A description of the package.
-    a= "b" # A description of the package.
-    b ="b" # A description of the package.
-    c = "b" # A description of the package.
-    d = {a="b"} # A description of the package.
-    e = {a= "b"} # A description of the package.
-    f = {a ="b"} # A description of the package.
-    g = {a = "b"} # A description of the package.
-    e = [{a="b"}] # A description of the package.
-    e = [{a= "b"}] # A description of the package.
-    e = [{a ="b"}] # A description of the package.
-    e = [{a = "b"}] # A description of the package.
+    b= "b" # A description of the package.
+    c ="b" # A description of the package.
+    d = "b" # A description of the package.
+    e ={a="b"} # A description of the package.
+    f ={a= "b"} # A description of the package.
+    g ={a ="b"} # A description of the package.
+    h ={a = "b"} # A description of the package.
+    i =[{a="b"}] # A description of the package.
+    j =[{a= "b"}] # A description of the package.
+    k =[{a ="b"}] # A description of the package.
+    l =[{a = "b"},{a = "b"}        ] # A description of the package.
     "#;
 
     const AFTER_3: &str = r#"[a]
-    a ="a" # A description of the package.
-    a = "b" # A description of the package.
+    a = "a" # A description of the package.
     b = "b" # A description of the package.
     c = "b" # A description of the package.
-    d = {a = "b"} # A description of the package.
+    d = "b" # A description of the package.
     e = {a = "b"} # A description of the package.
     f = {a = "b"} # A description of the package.
     g = {a = "b"} # A description of the package.
-    e = [{a = "b"}] # A description of the package.
-    e = [{a = "b"}] # A description of the package.
-    e = [{a = "b"}] # A description of the package.
-    e = [{a = "b"}] # A description of the package.
+    h = {a = "b"} # A description of the package.
+    i = [{a = "b"}] # A description of the package.
+    j = [{a = "b"}] # A description of the package.
+    k = [{a = "b"}] # A description of the package.
+    l = [{a = "b"}, {a = "b"}] # A description of the package.
     "#;
 
     let mut toml = CargoToml::new(BEFORE_3.to_string()).unwrap();
@@ -160,7 +160,9 @@ fn space_between_assignments() {
     let mut config = TomlFormatConfig::new();
     config.space_between_assignment = true;
 
+    println!("{}", toml.toml_document.to_string());
     toml.format(config);
+    println!("{}", toml.toml_document.to_string());
 
     assert_eq!(toml.toml_document.to_string(), AFTER_3);
 }

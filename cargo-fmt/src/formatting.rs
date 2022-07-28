@@ -1,7 +1,8 @@
 use std::{cmp::Ordering, str::FromStr, collections::HashMap};
 
 use strum::EnumProperty;
-use toml_edit::{Decor, Document, Item, Key, Table};
+use toml::value::Map;
+use toml_edit::{Decor, Value, Document, Item, Key, Table, KeyMut, Array};
 
 use crate::{
     package_order::{PackageOrder, TomlSection},
@@ -298,39 +299,103 @@ impl TomlFormatter for AddSpaceBetweenAssignments {
         toml_document
             .as_table_mut()
             .iter_mut()
-            .for_each(|(_, section)| {
-                // Trim empty spaces and lines around section values. e.g \n[name]\n -> [name]\n.
-                visit_item_mut(section, true);
+            .for_each(|(mut key, section)| {
+                key.decor_mut().set_suffix(" ");
+                
+                self.fmt_item(section, 0);
             });
 
         Ok(())
     }
 }
 
+// standalone table
+// table as value 
+// root key
+// key in table
 impl AddSpaceBetweenAssignments {
-    fn fmt_table(table: &mut Table) { 
+    fn fmt_table(&self, table: &mut Table, depth: usize) { 
         for (ref mut key, ref mut val) in table.iter_mut() {
             key.decor_mut().set_suffix(" ");
+            if depth > 0 {
+                key.decor_mut().set_prefix(" ");
+            }
 
-            Self::fmt_item(val);
+           self.fmt_item(val, depth);
         }
     }
 
-    fn fmt_item(item: &mut Item) {
+    fn fmt_standalone_table(&self, table: &mut Table, depth: usize) { 
+        table.decor_mut().set_prefix("");
+        table.decor_mut().set_prefix("");
+    }
+
+    fn fmt_table_in_array(&self, table: &mut Table, index: usize) { 
+        panic!();
+        if index > 0 {
+            table.decor_mut().set_prefix(" ");
+        }
+        table.decor_mut().set_suffix("");
+    }
+
+    fn fmt_table_as_value(&self, table: &mut Table, depth: usize) { 
+        table.decor_mut().set_prefix(" ");
+        table.decor_mut().set_prefix("");
+    }
+
+    fn fmt_root_key(&self, key: &mut KeyMut) {
+        key.decor_mut().set_suffix(" ");
+    }
+
+    fn fmt_table_key(&self, key: &mut KeyMut) {
+        key.decor_mut().set_suffix(" ");
+    }
+
+    fn fmt_item(&self, item: &mut Item, depth: usize) {
         match item {
             Item::None => {
                 todo!();
             }
             Item::Value(value) => {
-                value.decor_mut().set_prefix(" ");
+                self.fmt_value(value,depth > 1, false);
             }
             Item::Table(table) => {
-                todo!();
+                self.fmt_table(table, depth + 1);
             }
-            Item::ArrayOfTables(_) => {
-                todo!();
+            Item::ArrayOfTables(tables) => {
+               for (i, table) in tables.iter_mut().enumerate() {
+                    self.fmt_table_in_array(table, i);
+               }
             }
         }
+    }
+
+    fn fmt_value(&self, value: &mut Value, add_space_perfix: bool, add_space_suffix: bool) {
+        match value {
+            _ => {}
+            toml_edit::Value::Array(array) => {
+                self.fmt_array(array);
+            },
+            toml_edit::Value::InlineTable(inline_table) => {
+                for (i, (key, value)) in inline_table.iter_mut().enumerate() {
+                    self.fmt_value(value, i>0, false);
+               }
+            }
+        }
+
+        if add_space_suffix {
+            value.decor_mut().set_suffix(" ");
+        }
+
+        if add_space_perfix {
+            value.decor_mut().set_prefix(" ");
+        }
+    }
+
+    fn fmt_array(&self, array: &mut Array) {
+       for element in array.iter_mut() {
+           self.fmt_value(element, true, false)
+       }
     }
 }
 
