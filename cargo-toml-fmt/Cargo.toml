@@ -1,5 +1,5 @@
 [package]
-name = "cargo-fmt"
+name = "cargo-toml-fmt"
 version = "0.1.0"
 edition = "2021"
 

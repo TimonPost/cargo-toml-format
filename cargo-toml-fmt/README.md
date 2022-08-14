@@ -4,19 +4,27 @@
 - A value can be an table `{...}`, array `[]`, or inlined `key = value`.
 - A table contains 1 or many key-value pairs.
 
-# Formatting Rules
-
+## Sections
 - [X] `package` section should always be at the top.
 - [X] `package` section order as it is defined in the manifest is maintained.
 - [X] Section header and the first following keys should NOT be separated by space.
 - [X] Sections are separated by a single newline.
+
+## Keys
 - [X] Keys within sections have no spaces in between them.
 - [X] Keys may not contain quotes.
-- [ ] Keys are separated from a value by ` = `
-- [X] Keys are sorted alphabetically within each section, except for the [package] section.
-- [ ] Use multiline strings rather than `\n`.
-- [ ] For table values, such as a crate dependency with a path, write the entire table using curly braces and commas on the same line as the key if it fits. If the entire table does not fit on the same line as the key, separate it out into a separate section with key-value pairs.
+- [x] Keys are separated from a value by ` = `
+- [x] Keys may not contain quotes (unless it is required for a particular reason)
+- [x] Keys are sorted alphabetically within each section, except for the [package] section.
+
+- [x] Empty spaces are stripped at the start and end of each line.
+
+## Line lenght wrap
+- [X] Arrays wrap line when longer than configurable length.
+- [X] For table values, such as a crate dependency with a path, write the entire table using curly braces and commas on the same line as the key if it fits. If the entire table does not fit on the same line as the key, separate it out into a separate section with key-value pairs.
+
 - [ ] Within the description field, wrap text at 80 columns
+- [ ] Use multiline strings rather than `\n`.
 
 ## Field Restrictions
 
@@ -31,6 +39,11 @@
 - [ ] The `categories` field its categories, if present, should match one of the strings available at https://crates.io/category_slugs, and must match exactly.
 - [ ] The `publish` field, if present, must be a boolean or array with registry links. [^8]
 
+
+TODO:
+- Exclude table keys from alphabetically sorting
+
+
 [1]: https://github.com/rust-dev-tools/fmt-rfcs/blob/master/guide/cargo.md?rgh-link-date=2020-04-11T05%3A30%3A22Z
 [2]: https://doc.rust-lang.org/cargo/reference/manifest.html
 [^3]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-name-field
@@ -44,3 +57,10 @@
 https://crates.io/crates/cargo-toml-lint
 https://github.com/rust-lang/rustfmt/pull/5240/files
 https://github.com/tbrand/cargo-tomlfmt
+
+
+
+- table formatting section trim?
+- validate section comments do not get stripped
+- validate that array comments do not get stripped
+- format table before wrapping

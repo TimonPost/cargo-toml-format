@@ -1,7 +1,50 @@
-use cargo_fmt::{cargo_toml::CargoToml, toml_config::TomlFormatConfig};
+use cargo_fmt::{
+    cargo_toml::CargoToml,
+    package_order::{TomlSection, TomlSort},
+    toml_config::TomlFormatConfig,
+};
+use strum::VariantNames;
 
 #[test]
-fn package_order_sort() {
+fn order_sections_to_manifest_spec() {
+    const BEFORE: &str = r#"[bins]
+    [cargo-features]
+    [target]
+    [dev-dependencies]
+    [features]
+    [package]
+    [profile]
+    [package.metadata]
+    [badges]
+    [target.btc]
+    [lib]
+    [dependencies]
+    [workspace]
+    [example]
+    [test]
+    [replace]
+    [patch]
+    [build-dependencies]
+    [bench]
+    "#;
+
+    let mut config = TomlFormatConfig::new();
+    config.order_sections = true;
+
+    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+
+    toml.format();
+
+    let mut iter = toml.toml_document.iter();
+
+    for variant in TomlSection::VARIANTS.iter() {
+        let (key, _) = iter.next().unwrap();
+        assert_eq!(key, *variant)
+    }
+}
+
+#[test]
+fn order_package_section_to_manifest_spec() {
     const BEFORE: &str = r#"
     [package]
     authors = ["a"] # The authors of the package.
@@ -64,12 +107,110 @@ fn package_order_sort() {
     resolver = "a" # Sets the dependency resolver to use.
     "#;
 
-    let mut toml = CargoToml::new(BEFORE.to_string()).unwrap();
-
     let mut config = TomlFormatConfig::new();
     config.order_package_section = true;
 
-    toml.format(config);
+    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+
+    toml.format();
+
+    assert_eq!(toml.toml_document.to_string(), AFTER);
+}
+
+#[test]
+fn sort_dependencies_alphabetically() {
+    const BEFORE: &str = r#"
+    [dependencies]
+    a = "0.1"
+    d = "0.4"
+    e = "0.5"
+    b = "0.2"
+    c = "0.3"
+    f = "0.6"
+    g = "0.7"
+    "#;
+
+    const AFTER: &str = r#"
+    [dependencies]
+    a = "0.1"
+    b = "0.2"
+    c = "0.3"
+    d = "0.4"
+    e = "0.5"
+    f = "0.6"
+    g = "0.7"
+    "#;
+
+    let mut config = TomlFormatConfig::new();
+    config.dependency_sorts = Some(vec![TomlSort::Alphabetical]);
+
+    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+
+    toml.format();
+
+    assert_eq!(toml.toml_document.to_string(), AFTER);
+}
+
+#[test]
+fn sort_dependencies_by_length() {
+    const BEFORE: &str = r#"
+    [dependencies]
+    a = "a"
+    g = { test = 5.0 }
+    d = { version = "aa"}
+    f = { test = true}
+    b = { version = "aaaa", default_features=false}
+    c = { test = 1 }
+    e = { version = "aaa", features = ["a"] }
+    "#;
+
+    const AFTER: &str = r#"
+    [dependencies]
+    a = "a"
+    c = { test = 1 }
+    g = { test = 5.0 }
+    f = { test = true}
+    d = { version = "aa"}
+    e = { version = "aaa", features = ["a"] }
+    b = { version = "aaaa", default_features=false}
+    "#;
+
+    let mut config = TomlFormatConfig::new();
+    config.dependency_sorts = Some(vec![TomlSort::Length]);
+
+    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+
+    toml.format();
+
+    assert_eq!(toml.toml_document.to_string(), AFTER);
+}
+
+#[test]
+fn order_table_keys_alphabetically() {
+    const BEFORE: &str = r#"
+    [a]
+    b={a=1}
+    a="a"
+    b1a={b=[{b=1,a=1}],a=[{a=1,b=1}]}
+    c={b={b=1,a=1}}
+    b1={b=1,a=2}
+    "#;
+
+    const AFTER: &str = r#"
+    [a]
+    a="a"
+    b={a=1}
+    b1={a=2,b=1}
+    b1a={a=[{a=1,b=1}],b=[{a=1,b=1}]}
+    c={b={a=1,b=1}}
+    "#;
+
+    let mut config = TomlFormatConfig::new();
+    config.order_table_keys = true;
+
+    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+
+    toml.format();
 
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }
