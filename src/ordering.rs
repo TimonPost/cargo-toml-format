@@ -162,7 +162,7 @@ impl TomlFormatter for OrderTableKeysAlphabetically {
     ) -> anyhow::Result<()> {
         toml_document.iter_mut().for_each(|(section_key, item)| {
             if section_key.get() != "package" {
-                // package section is sorted according to the manifest order.
+                // package section is sorted according to the manifest order and not alphabetically.
                 Self::order_item(item);
             }
         });
@@ -235,7 +235,7 @@ impl OrderDependencies {
         dependencies: &mut Item,
         config: &TomlFormatConfig,
     ) -> anyhow::Result<()> {
-        let dependency_sorts = if let Some(dependency_sorts) = &config.dependency_sorts {
+        let dependency_sorts = if let Some(dependency_sorts) = &config.order_dependencies {
             dependency_sorts
         } else {
             return Ok(());

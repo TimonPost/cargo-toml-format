@@ -1,4 +1,4 @@
-use cargo_fmt::{
+use cargo_toml_fmt::{
     cargo_toml::CargoToml,
     package_order::{TomlSection, TomlSort},
     toml_config::TomlFormatConfig,
@@ -31,9 +31,9 @@ fn order_sections_to_manifest_spec() {
     let mut config = TomlFormatConfig::new();
     config.order_sections = true;
 
-    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
-    toml.format();
+    toml.format().unwrap();
 
     let mut iter = toml.toml_document.iter();
 
@@ -110,9 +110,9 @@ fn order_package_section_to_manifest_spec() {
     let mut config = TomlFormatConfig::new();
     config.order_package_section = true;
 
-    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
-    toml.format();
+    toml.format().unwrap();
 
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }
@@ -142,11 +142,11 @@ fn sort_dependencies_alphabetically() {
     "#;
 
     let mut config = TomlFormatConfig::new();
-    config.dependency_sorts = Some(vec![TomlSort::Alphabetical]);
+    config.order_dependencies = Some(vec![TomlSort::Alphabetical]);
 
-    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
-    toml.format();
+    toml.format().unwrap();
 
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }
@@ -176,11 +176,11 @@ fn sort_dependencies_by_length() {
     "#;
 
     let mut config = TomlFormatConfig::new();
-    config.dependency_sorts = Some(vec![TomlSort::Length]);
+    config.order_dependencies = Some(vec![TomlSort::Length]);
 
-    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
-    toml.format();
+    toml.format().unwrap();
 
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }
@@ -208,9 +208,9 @@ fn order_table_keys_alphabetically() {
     let mut config = TomlFormatConfig::new();
     config.order_table_keys = true;
 
-    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
-    toml.format();
+    toml.format().unwrap();
 
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }

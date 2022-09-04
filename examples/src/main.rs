@@ -1,6 +1,6 @@
 use std::{collections::HashMap, hash::Hash};
 
-use cargo_fmt::{package_order::TomlSection, toml_config::TomlFormatConfig, cargo_toml::CargoToml};
+use cargo_fmt::{cargo_toml::CargoToml, package_order::TomlSection, toml_config::TomlFormatConfig};
 use toml_edit::{Item, Key, KeyMut, Table, Value};
 mod sort;
 
@@ -24,27 +24,25 @@ fn main() {
 
     for path in paths {
         let toml_path = path.unwrap().path();
-        
+
         let full_path = format!("{}\\Cargo.toml", toml_path.display());
         println!("Path: {}", full_path);
 
         if let Ok(toml_contents) = std::fs::read_to_string(full_path.clone()) {
             let after = "[workspace.test]";
-            
+
             let mut config = TomlFormatConfig::new();
             config.order_package_section = true;
-        
-        
+
             let mut toml = CargoToml::new(toml_contents, config).unwrap();
-        
+
             toml.format();
-        
-            std::fs::write(full_path, toml.toml_document.to_string());            
+
+            std::fs::write(full_path, toml.toml_document.to_string());
         } else {
             println!("Failed to read file: {}", full_path);
         }
-    }   
-  
+    }
 }
 
 pub fn debug_table(table: &Table) {

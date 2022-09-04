@@ -1,7 +1,10 @@
-use cargo_fmt::{cargo_toml::CargoToml, package_order::TomlSort, toml_config::TomlFormatConfig};
+use cargo_toml_fmt::{
+    cargo_toml::CargoToml,
+    toml_config::TomlFormatConfig,
+};
 
 #[test]
-fn adds_new_line_after_section() {
+fn append_new_line_after_section() {
     const BEFORE: &str = r#"[package]
 [b]
 a="a" # A description of the package.
@@ -28,10 +31,10 @@ d="d" # A description of the package.
     let mut config = TomlFormatConfig::new();
     config.add_newline_after_section = true;
 
-    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
     println!("{}", toml.toml_document.to_string());
-    toml.format();
+    toml.format().unwrap();
     println!("{}", toml.toml_document.to_string());
 
     assert_eq!(toml.toml_document.to_string(), AFTER);
@@ -56,9 +59,9 @@ d = "b"
     let mut config = TomlFormatConfig::new();
     config.table_formatting = true;
 
-    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
-    toml.format();
+    toml.format().unwrap();
 
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }
@@ -82,9 +85,9 @@ h = { a = "b" } # test
     let mut config = TomlFormatConfig::new();
     config.table_formatting = true;
 
-    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
-    toml.format();
+    toml.format().unwrap();
 
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }
@@ -148,9 +151,9 @@ h=[
     let mut config = TomlFormatConfig::new();
     config.wrap_array = Some(15);
 
-    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
-    toml.format();
+    toml.format().unwrap();
 
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }
@@ -178,13 +181,9 @@ features = ["a","b"]
     let mut config = TomlFormatConfig::new();
     config.wrap_table = Some(20);
 
-    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
-    println!("{}", toml.toml_document.to_string());
-
-    toml.format();
-
-    println!("{}", toml.toml_document.to_string());
+    toml.format().unwrap();
 
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }

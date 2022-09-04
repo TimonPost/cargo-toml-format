@@ -1,4 +1,4 @@
-use cargo_fmt::{cargo_toml::CargoToml, toml_config::TomlFormatConfig};
+use cargo_toml_fmt::{cargo_toml::CargoToml, toml_config::TomlFormatConfig};
 
 #[test]
 fn trims_empty_spaces_section_keys() {
@@ -17,11 +17,11 @@ b="b" # A description of the package.
 "#;
 
     let mut config = TomlFormatConfig::new();
-    config.trim_section_keys = true;
+    config.trim_section_key_names = true;
 
-    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
-    toml.format();
+    toml.format().unwrap();
 
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }
@@ -53,12 +53,12 @@ d="d" # A description of the package.
 "#;
 
     let mut config = TomlFormatConfig::new();
-    config.trim_keys = true;
+    config.trim_all_keys = true;
 
-    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
     println!("{}", toml.toml_document.to_string());
-    toml.format();
+    toml.format().unwrap();
     println!("{}", toml.toml_document.to_string());
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }
@@ -82,9 +82,9 @@ fn trims_quotes_from_keys() {
     let mut config = TomlFormatConfig::new();
     config.trim_key_quotes = true;
 
-    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
-    toml.format();
+    toml.format().unwrap();
 
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }
@@ -108,9 +108,9 @@ d = [] # A description of the package.
     let mut config = TomlFormatConfig::new();
     config.table_formatting = true;
 
-    let mut toml = CargoToml::new(BEFORE.to_string(), config).unwrap();
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
-    toml.format();
+    toml.format().unwrap();
 
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }
