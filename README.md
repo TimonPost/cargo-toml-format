@@ -1,28 +1,42 @@
-# Definitions
+# Cargo Toml Formatting Tool
+
+This is an in-progress, non-production-ready, cargo TOML file formatting library.
+See the lists below for detailed information on what formatting is supported.
+
+## Definitions
+
+First, the definitions used in this document.
+
 - A section is defined by `[some_name]` and contains key-value pairs.
 - A key identifies a value.
-- A value can be an table `{...}`, array `[]`, or inlined `key = value`.
+- A value can be an table `{...}`, array `[]`, or inlined datatype `key = value`.
 - A table contains 1 or many key-value pairs.
+- A table can be defined as inline or not inline.
 
-## Sections
+## Formatting Rules
+
+Formatting rules are defined by the rust FMT RFC [^1] and cargo manifest [^2].
+
+### Sections
+
 - [X] `package` section should always be at the top.
 - [X] `package` section order as it is defined in the manifest is maintained.
 - [X] Section header and the first following keys should NOT be separated by space.
 - [X] Sections are separated by a single newline.
 
 ## Keys
+
 - [X] Keys within sections have no spaces in between them.
 - [X] Keys may not contain quotes.
 - [x] Keys are separated from a value by ` = `
 - [x] Keys may not contain quotes (unless it is required for a particular reason)
 - [x] Keys are sorted alphabetically within each section, except for the [package] section.
-
 - [x] Empty spaces are stripped at the start and end of each line.
 
-## Line lenght wrap
+## Line Length Wrap
+
 - [X] Arrays wrap line when longer than configurable length.
 - [X] For table values, such as a crate dependency with a path, write the entire table using curly braces and commas on the same line as the key if it fits. If the entire table does not fit on the same line as the key, separate it out into a separate section with key-value pairs.
-
 - [ ] Within the description field, wrap text at 80 columns
 - [ ] Use multiline strings rather than `\n`.
 
@@ -39,13 +53,36 @@
 - [ ] The `categories` field its categories, if present, should match one of the strings available at https://crates.io/category_slugs, and must match exactly.
 - [ ] The `publish` field, if present, must be a boolean or array with registry links. [^8]
 
+# Similar Work
 
-TODO:
-- Exclude table keys from alphabetically sorting
+While there is similar work it was not what I was looking for.
+
+- [cargo-toml-lint](https://crates.io/crates/cargo-toml-lint)
+    Lints if dependency sections are sorted alphabetically.
+- [Rust fmt PR](https://github.com/rust-lang/rustfmt/pull/5240/files)
+    Provides basic formatting operations but has been open for a long time and is not a high priority. This is the reason this library is created.
+- [cargo-toml-fmt](https://github.com/tbrand/cargo-tomlfmt)
+    Very minimal formatting library that is not maintained for many years.
+- [cargo-sort](https://github.com/DevinR528/cargo-sort)
+    Sorts tables in the cargo toml file but lacks.
+- [toml-fmt](https://crates.io/crates/toml-fmt)
+    Limited non-maintained toml formatting library.
 
 
-[1]: https://github.com/rust-dev-tools/fmt-rfcs/blob/master/guide/cargo.md?rgh-link-date=2020-04-11T05%3A30%3A22Z
-[2]: https://doc.rust-lang.org/cargo/reference/manifest.html
+## TODO
+
+- More control over excluding items from the formatting processes.
+- Add binary functionality with file configuration in yml format.
+- Create linter.
+
+Needs validation
+- table formatting section trim?
+- validate section comments do not get stripped
+- validate that array comments do not get stripped
+- format table before wrapping
+
+[^1]: https://github.com/rust-dev-tools/fmt-rfcs/blob/master/guide/cargo.md?rgh-link-date=2020-04-11T05%3A30%3A22Z
+[^2]: https://doc.rust-lang.org/cargo/reference/manifest.html
 [^3]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-name-field
 [^4]: https://doc.rust-lang.org/edition-guide/index.html
 [^5]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-rust-version-field
@@ -54,13 +91,3 @@ TODO:
 [^8]: https://doc.rust-lang.org/cargo/reference/manifest.html#the-publish-field
 
 
-https://crates.io/crates/cargo-toml-lint
-https://github.com/rust-lang/rustfmt/pull/5240/files
-https://github.com/tbrand/cargo-tomlfmt
-
-
-
-- table formatting section trim?
-- validate section comments do not get stripped
-- validate that array comments do not get stripped
-- format table before wrapping
