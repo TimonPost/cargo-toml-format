@@ -1,7 +1,4 @@
-use cargo_toml_fmt::{
-    cargo_toml::CargoToml,
-    toml_config::TomlFormatConfig,
-};
+use cargo_toml_fmt::{cargo_toml::CargoToml, toml_config::TomlFormatConfig};
 
 #[test]
 fn append_new_line_after_section() {

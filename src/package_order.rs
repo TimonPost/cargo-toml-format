@@ -39,7 +39,7 @@ pub enum TomlSection {
     Package,
     #[strum(serialize = "lib", props(order = "b"))]
     Lib,
-    #[strum(serialize = "bins", props(order = "c"))]
+    #[strum(serialize = "bin", props(order = "c"))]
     Bins,
     #[strum(serialize = "example", props(order = "d"))]
     Example,

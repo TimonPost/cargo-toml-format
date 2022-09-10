@@ -47,8 +47,8 @@ impl Default for TomlFormatConfig {
             trim_key_quotes: true,
             add_newline_after_section: true,
             table_formatting: true,
-            wrap_array: Some(20),
-            wrap_table: Some(20),
+            wrap_array: Some(50),
+            wrap_table: Some(50),
         }
     }
 }

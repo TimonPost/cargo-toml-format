@@ -1,9 +1,10 @@
 use std::{cmp::Ordering, collections::HashMap, str::FromStr};
 
 use strum::EnumProperty;
-use toml_edit::{Document, Item, Key, Table, Value};
+use toml_edit::{ArrayOfTables, Document, Item, Key, Table, Value};
 
 use crate::{
+    iter_sections_as_items, iter_sections_as_items_mut,
     package_order::{PackageOrder, TomlSection, TomlSort},
     toml_config::TomlFormatConfig,
     utils::item_len,
@@ -27,17 +28,25 @@ impl TomlFormatter for OrderSections {
         }
 
         let mut section_tables = HashMap::<String, (Key, Table)>::new();
+        let mut array_of_tables = HashMap::<String, (Key, ArrayOfTables)>::new();
         let all_sections = TomlSection::manifest_spec();
 
         // Collect all section tables
-        toml_document.iter().for_each(|(section_key, _)| {
-            let (section_key, section_item) = toml_document.get_key_value(section_key).unwrap();
-            let section_table = section_item.as_table().unwrap();
+        iter_sections_as_items(toml_document, |section_key, section_item| {
+            println!("section_key: {}", section_key);
 
-            section_tables.insert(
-                section_key.get().to_string(),
-                (section_key.clone(), section_table.clone()),
-            );
+            if let Some(section_table) = section_item.as_table() {
+                section_tables.insert(
+                    section_key.get().to_string(),
+                    (section_key.clone(), section_table.clone()),
+                );
+            }
+            if let Some(tables) = section_item.as_array_of_tables() {
+                array_of_tables.insert(
+                    section_key.get().to_string(),
+                    (section_key.clone(), tables.clone()),
+                );
+            }
         });
 
         // Clear the document, lets sort the tables and add them back with their new positions.
@@ -47,6 +56,26 @@ impl TomlFormatter for OrderSections {
 
         // Iterate tables as they should be ordered.
         for ordered_section in all_sections {
+            if let Some((section_key, section_table)) = array_of_tables.get(&ordered_section) {
+                println!("arrray of tables");
+
+                let mut new_tables = section_table.clone();
+
+                for table in new_tables.iter_mut() {
+                    idx += 1;
+                    table.set_position(idx);
+                }
+
+                toml_document.insert(section_key.get(), Item::ArrayOfTables(new_tables));
+
+                if let Some((mut k, v)) = toml_document.get_key_value_mut(section_key.get()) {
+                    k.decor_mut()
+                        .set_prefix(section_key.decor().prefix().unwrap().to_string());
+                    k.decor_mut()
+                        .set_suffix(section_key.decor().suffix().unwrap().to_string());
+                }
+            }
+
             // Process the table if it exists within the document.
             if let Some((section_key, section_table)) = section_tables.get(&ordered_section) {
                 let mut new_table = section_table.clone();
@@ -90,9 +119,12 @@ impl TomlFormatter for OrderSections {
                         {
                             idx += 1;
                             table.set_position(idx);
+                            println!("{:?}", table.is_implicit());
                         } else if !subtable_has_pos && !section_has_pos {
-                            // Both section and sub table have no positions.
-                            panic!("can not occur");
+                            if !table.is_implicit() {
+                                // Both section and sub table have no positions.
+                                panic!("Not possible")
+                            }
                         } else if !subtable_has_pos && section_has_pos {
                             // Sub table does not have any position.
                         } else {
@@ -160,12 +192,13 @@ impl TomlFormatter for OrderTableKeysAlphabetically {
         toml_document: &mut Document,
         _config: &TomlFormatConfig,
     ) -> anyhow::Result<()> {
-        toml_document.iter_mut().for_each(|(section_key, item)| {
+        iter_sections_as_items_mut(toml_document, |section_key, item| {
             if section_key.get() != "package" {
                 // package section is sorted according to the manifest order and not alphabetically.
                 Self::order_item(item);
             }
         });
+
         Ok(())
     }
 }

@@ -23,7 +23,7 @@ pub enum FormattingStage {
 
 impl CargoToml {
     /// Loads the given toml contents and doesn't initialize default formatting rules.
-    pub fn new(toml_contents: String, config: TomlFormatConfig) -> anyhow::Result<Self> {
+    fn new(toml_contents: String, config: TomlFormatConfig) -> anyhow::Result<Self> {
         let toml_document = toml_contents
             .parse::<Document>()
             .map_err(|e| anyhow::anyhow!("Failed to parse toml. {e}"))?;
@@ -90,7 +90,6 @@ impl CargoToml {
             toml.add_format_rule(FormattingStage::AfterFormatting, InlineTableWrap::new());
         }
 
-        
         if config.add_newline_after_section {
             toml.add_format_rule(FormattingStage::AfterFormatting, AppendLineAfterSection);
         }

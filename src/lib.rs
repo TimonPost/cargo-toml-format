@@ -14,7 +14,7 @@ pub use ordering::{
 };
 
 use toml_config::TomlFormatConfig;
-use toml_edit::Document;
+use toml_edit::{Document, Item, Key, KeyMut, Table};
 
 pub trait TomlFormatter {
     fn visit_document(
@@ -22,4 +22,38 @@ pub trait TomlFormatter {
         toml_document: &mut Document,
         _config: &TomlFormatConfig,
     ) -> anyhow::Result<()>;
+}
+
+fn iter_sections_as_tables<F: FnMut(&mut KeyMut, &mut Table)>(document: &mut Document, mut cb: F) {
+    document
+        .iter_mut()
+        .for_each(|(mut key, mut section)| match section {
+            Item::None => println!("none"),
+            Item::Value(_) => println!("value"),
+            Item::Table(table) => {
+                cb(&mut key, table);
+            }
+            Item::ArrayOfTables(tables) => {
+                for table in tables.iter_mut() {
+                    cb(&mut key, table);
+                }
+            }
+        });
+}
+
+fn iter_sections_as_items<F: FnMut(&Key, &Item)>(document: &mut Document, mut cb: F) {
+    document.iter().for_each(|(mut key, mut section)| {
+        let (section_key, section_item) = document.get_key_value(key).unwrap();
+
+        cb(section_key, section_item);
+    });
+}
+
+fn iter_sections_as_items_mut<F: FnMut(&mut KeyMut, &mut Item)>(
+    document: &mut Document,
+    mut cb: F,
+) {
+    document.iter_mut().for_each(|(mut key, mut section)| {
+        cb(&mut key, section);
+    });
 }

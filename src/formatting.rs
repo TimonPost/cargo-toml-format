@@ -1,18 +1,8 @@
 use toml_edit::{Array, Decor, Document, Item, Key, KeyMut, Table, TableLike, Value};
 
-use crate::toml_config::TomlFormatConfig;
+use crate::{iter_sections_as_tables, toml_config::TomlFormatConfig};
 
 use super::TomlFormatter;
-
-fn iter_sections<F: FnMut(&mut KeyMut, &mut Table)>(document: &mut Document, mut cb: F) {
-    document.iter_mut().for_each(|(mut key, mut section)| {
-        if let Item::Table(section) = &mut section {
-            cb(&mut key, section);
-        } else {
-            panic!();
-        }
-    });
-}
 
 /// Trims empty spaces around the section names.
 ///
@@ -25,7 +15,7 @@ impl TomlFormatter for SectionKeyNameTrimmer {
         toml_document: &mut Document,
         _config: &TomlFormatConfig,
     ) -> anyhow::Result<()> {
-        iter_sections(toml_document, |section_key, _| {
+        iter_sections_as_tables(toml_document, |section_key, _| {
             trim_decor_blank_lines(section_key.decor_mut());
         });
         Ok(())
@@ -43,7 +33,7 @@ impl TomlFormatter for KeyTrimmer {
         toml_document: &mut Document,
         _config: &TomlFormatConfig,
     ) -> anyhow::Result<()> {
-        iter_sections(toml_document, |_, section| {
+        iter_sections_as_tables(toml_document, |_, section| {
             trim_decor_blank_lines(section.decor_mut());
 
             section.iter_mut().for_each(|(mut key, _)| {
@@ -68,7 +58,7 @@ impl TomlFormatter for KeyQuoteTrimmer {
         toml_document: &mut Document,
         _config: &TomlFormatConfig,
     ) -> anyhow::Result<()> {
-        iter_sections(toml_document, |_, section| {
+        iter_sections_as_tables(toml_document, |_, section| {
             Self::visit_table(section);
         });
         Ok(())
@@ -185,7 +175,7 @@ impl TomlFormatter for TableFormatting {
         toml_document: &mut Document,
         _config: &TomlFormatConfig,
     ) -> anyhow::Result<()> {
-        iter_sections(toml_document, |section_key, section| {
+        iter_sections_as_tables(toml_document, |section_key, section| {
             // Remove spaces from section key [ section ] -> [section]
             section_key.fmt();
 
@@ -242,15 +232,18 @@ impl TableFormatting {
                 inline_table.decor_mut().set_prefix(" ");
                 inline_table.decor_mut().set_suffix("");
             }
-            Value::Float(..) | Value::String(..) | Value::Datetime(..) | Value::Integer(..) => {
+            Value::Float(..)
+            | Value::String(..)
+            | Value::Datetime(..)
+            | Value::Integer(..)
+            | Value::Boolean(_) => {
                 // Remove prefix and postfix white spaces from the inline table.
                 // e.g 'a =    true    ' -> 'a = true'
                 value.decor_mut().set_prefix(" ");
                 value.decor_mut().set_suffix("");
             }
-            _ => {}
         }
-        
+
         // Adds back the comment that was trimmed during formatting.
         if !comment.is_empty() {
             Self::set_comment_suffix(&comment, value.decor_mut());
@@ -263,6 +256,9 @@ impl TableFormatting {
             self.fmt_value(element);
         }
 
+        array.fmt();
+
+        array.decor_mut().set_prefix(" ");
         array.decor_mut().set_suffix("");
     }
 
@@ -299,7 +295,7 @@ impl TomlFormatter for AppendLineAfterSection {
         toml_document: &mut Document,
         _config: &TomlFormatConfig,
     ) -> anyhow::Result<()> {
-        iter_sections(toml_document, |section_key, section| {
+        iter_sections_as_tables(toml_document, |section_key, section| {
             // Package section is the first section in the file hence we dont want to prepend it with a new line.
             if section_key.get() != "package" {
                 Self::append_empty_line(section);
@@ -326,7 +322,7 @@ impl TomlFormatter for WrapArray {
         toml_document: &mut Document,
         config: &TomlFormatConfig,
     ) -> anyhow::Result<()> {
-        iter_sections(toml_document, |section_key, section| {
+        iter_sections_as_tables(toml_document, |section_key, section| {
             if section_key.get() != "package" {
                 self.visit_table(section, config.wrap_array.unwrap())
             }
@@ -393,7 +389,7 @@ impl TomlFormatter for InlineTableWrap {
         toml_document: &mut Document,
         config: &TomlFormatConfig,
     ) -> anyhow::Result<()> {
-        iter_sections(toml_document, |section_key, section| {
+        iter_sections_as_tables(toml_document, |section_key, section| {
             // Package section should remain as it is written.
             if section_key.get() != "package" {
                 self.current_section_key = section_key.to_owned();
