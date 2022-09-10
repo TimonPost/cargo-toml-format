@@ -1,6 +1,6 @@
 # Cargo Toml Formatting Tool
 
-This is an in-progress, non-production-ready, cargo TOML file formatting library.
+This is an in-progress, non-production-ready, comments-preserving, cargo TOML file formatting library.
 See the lists below for detailed information on what formatting is supported.
 
 ## Definitions
