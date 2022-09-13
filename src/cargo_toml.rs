@@ -8,17 +8,26 @@ use crate::{
 
 use crate::toml_config::TomlFormatConfig;
 
+/// Simple attempt to structure formatting rules. 
+/// Some formatting rules have to happen after other rules.
+#[derive(PartialEq, Clone, Copy)]
+pub enum FormattingStage {
+    /// Before the document is formatted.
+    /// Use this if the formatting logic doesn't depend on formatting.
+    BeforeFormatting,
+    /// At the same time, before or after document formatting.
+    WhileFormatting,
+    /// After the formatting is performed. 
+    /// Use this if the formatting logic is dependent upon length of lines for example.
+    AfterFormatting,
+}
+
+/// The in memory representation of a Cargo.toml file. 
+/// This is the main entry point for formatting a Cargo.toml file.
 pub struct CargoToml {
     pub toml_document: Document,
     rules: Vec<(bool, FormattingStage, Box<dyn TomlFormatter>)>,
     config: TomlFormatConfig,
-}
-
-#[derive(PartialEq, Clone, Copy)]
-pub enum FormattingStage {
-    BeforeFormatting,
-    WhileFormatting,
-    AfterFormatting,
 }
 
 impl CargoToml {
@@ -97,14 +106,17 @@ impl CargoToml {
         Ok(toml)
     }
 
+    /// Adds a custom formatting rule that will be executed in the provided formatting stage.
     pub fn add_format_rule<T: TomlFormatter + 'static>(&mut self, stage: FormattingStage, rule: T) {
         self.rules.push((true, stage, Box::from(rule)));
     }
 
+    /// Formats the toml document in memory. 
+    /// This iterates all rules and applies rules in order of their stage.
     pub fn format(&mut self) -> anyhow::Result<()> {
         let mut toml_document = self.toml_document.clone();
 
-        let mut iter_stage = |filter_stage: FormattingStage| {
+        let mut iter_stage = |filter_stage: FormattingStage| -> anyhow::Result<()>{
             for (enabled, _, rule) in self
                 .rules
                 .iter_mut()
@@ -113,21 +125,23 @@ impl CargoToml {
                 if *enabled {
                     match rule.visit_document(&mut toml_document, &self.config) {
                         Ok(_) => {}
-                        Err(e) => println!("Error: {:?}", e),
+                        Err(e) => return anyhow::bail!("Error: {:?}", e),
                     }
                 }
             }
+            Ok(())
         };
 
-        iter_stage(FormattingStage::BeforeFormatting);
-        iter_stage(FormattingStage::WhileFormatting);
-        iter_stage(FormattingStage::AfterFormatting);
+        iter_stage(FormattingStage::BeforeFormatting)?;
+        iter_stage(FormattingStage::WhileFormatting)?;
+        iter_stage(FormattingStage::AfterFormatting)?;
 
         self.toml_document = toml_document;
 
         Ok(())
     }
 
+    /// Returns the dependencies section of this document.
     pub fn dependencies(&mut self) -> anyhow::Result<&mut Item> {
         self.toml_document
             .get_mut("dependencies")

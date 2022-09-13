@@ -1,11 +1,11 @@
 use cargo_toml_fmt::{cargo_toml::CargoToml, toml_config::TomlFormatConfig};
 
-const CROSSTERM_TOML_BEFORE: &str = r#"
+const TOML_BEFORE: &str = r#"
 
 [ package ] 
 
 
-readme=         "test"
+"readme"=         "test"
 authors = [""]
 exclude     =        [""]
 edition  = "1"
@@ -16,16 +16,16 @@ links= "linker"
 default-run=    "cargo run"
 include = [         ""  ]
 
-autobins =      false
+autobins=      false
 
 license-file    = "path"
         resolver = "resolver x"
-        
+
 description = "some description"
 
 
 autobenches=    false
-version =        "0.0.0"       
+version  =        "0.0.0"       
 publish = false
         documentation = "docs"              
 
@@ -37,7 +37,7 @@ keywords= ["" ]
 
 license=         "license"
 workspace = "workspace"
-autoexamples = false
+autoexamples = false                
 name = "some-crate"
 
 homepage = "homepage"
@@ -57,7 +57,7 @@ foo = {         git = "https://github.com/example/foo" }
 bar = { path    =      "my/local/bar" }
 
 [features]
-default  = [     "fancy-feature" ]
+"default"  = [     "fancy-feature" ]
     fancy-feature   = [         "foo",   "bar"]
 
 [dev-dependencies   ]
@@ -68,7 +68,7 @@ time =      "0.1.12"
 some-crate       = {     version =   "1.0", registry =    "crates.io", git = "http://github.com",          branch = "next",  features =  ["foo",         "bar"],  path = "hello_utils" }
 
 [profile.dev]
-opt-level = 1                      # Use slightly better optimizations.
+"opt-level" = 1                      # Use slightly better optimizations.
 overflow-checks = false                 # Disable integer overflow checks.          
 [[example]]         
         
@@ -99,7 +99,7 @@ crate-type = ["cdylib"]
 bench = false
 "#;
 
-const CROSSTERM_TOML_AFTER: &str = r#"[package]
+const TOML_AFTER: &str = r#"[package]
 name = "some-crate"
 version = "0.0.0"
 authors = [""]
@@ -222,11 +222,11 @@ members = [
 // cc = "1.0.3"
 
 #[test]
-fn format_crossterm_toml() {
-    let mut toml = CargoToml::default(CROSSTERM_TOML_BEFORE.to_string()).unwrap();
+fn format_toml() {
+    let mut toml = CargoToml::default(TOML_BEFORE.to_string()).unwrap();
 
     println!("{}", toml.toml_document.to_string());
     toml.format().unwrap();
     println!("{}", toml.toml_document.to_string());
-    assert_eq!(toml.toml_document.to_string(), CROSSTERM_TOML_AFTER);
+    assert_eq!(toml.toml_document.to_string(), TOML_AFTER);
 }

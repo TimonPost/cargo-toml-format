@@ -109,8 +109,42 @@ d = [] # A description of the package.
     config.table_formatting = true;
 
     let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
+    println!("{}", toml.toml_document.to_string());
+    toml.format().unwrap();
+    println!("{}", toml.toml_document.to_string());
+    assert_eq!(toml.toml_document.to_string(), AFTER);
+}
+
+#[test]
+fn comments_stress_test() {
+    const BEFORE: &str = r#"[a] 
+    # comment 1
+    a = { a = "b" } 
+
+
+    # comment 2
+
+    b = false
+    "#;
+
+    const AFTER: &str = r#"[a]
+# comment 1
+a = { a = "b" }
+# comment 2
+b = false
+    "#;
+
+    let mut config = TomlFormatConfig::new();
+    config.table_formatting = true;
+
+    let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
+
+    println!("{}", toml.toml_document.to_string());
 
     toml.format().unwrap();
 
+    println!("{}", toml.toml_document.to_string());
+
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }
+

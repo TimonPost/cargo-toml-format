@@ -71,12 +71,12 @@ impl KeyQuoteTrimmer {
 
         // Iterate table keys and trim away quotes.
         table.iter_mut().for_each(|(key, item)| {
-            let (_, trimmed_key) = Self::remove_quotes(&key);
+            let trimmed_key = Self::remove_quotes(&key);
 
             trimmed_keys.push((trimmed_key, item.clone()));
         });
 
-        // Iterate trimmed keys and insert them back into the table.
+        // Iterate trimmed keys and remove them and then insert them back into the table.
         trimmed_keys
             .into_iter()
             .for_each(|(trimmed_key, mut item)| {
@@ -93,11 +93,25 @@ impl KeyQuoteTrimmer {
             });
     }
 
+    // Recursively iterate items and trim quotes from key names 'e.g' "key" = value -> key = value.
+    fn visit_item(item: &mut Item) {     
+        match item {
+            Item::Value(value) => {
+                Self::visit_value(value);
+            }
+            Item::Table(table) => Self::visit_table(table),
+            Item::ArrayOfTables(tables) => {
+                tables.iter_mut().for_each(|table| Self::visit_table(table))
+            }
+            Item::None => {}
+        };
+    }
+
     fn visit_value(value: &mut Value) {
         if let Value::InlineTable(inline_table) = value {
             let mut trimmed_key_value = None;
             inline_table.iter_mut().for_each(|(key, inline_value)| {
-                let (_, trimmed_key) = Self::remove_quotes(&key);
+                let trimmed_key = Self::remove_quotes(&key);
 
                 trimmed_key_value = Some((trimmed_key, inline_value.clone()));
             });
@@ -115,20 +129,6 @@ impl KeyQuoteTrimmer {
         }
     }
 
-    fn visit_item(item: &mut Item) {
-        // Recursively iterate items and trim quotes from key names 'e.g' "key" = value -> key = value.
-        match item {
-            Item::Value(value) => {
-                Self::visit_value(value);
-            }
-            Item::Table(table) => Self::visit_table(table),
-            Item::ArrayOfTables(tables) => {
-                tables.iter_mut().for_each(|table| Self::visit_table(table))
-            }
-            Item::None => {}
-        };
-    }
-
     fn trim_key(original_key: &mut KeyMut, trimmed_key: &Key) {
         original_key
             .decor_mut()
@@ -138,14 +138,10 @@ impl KeyQuoteTrimmer {
             .set_suffix(trimmed_key.decor().suffix().unwrap_or("").to_string());
     }
 
-    fn remove_quotes(key: &KeyMut) -> (bool, Key) {
+    fn remove_quotes(key: &KeyMut) -> Key {
         let raw_key = key.to_repr().as_raw().to_string();
         let trimmed = raw_key.trim_matches('"');
-        // (is trimmed, new key)
-        (
-            trimmed != raw_key,
-            Key::new(trimmed.to_string()).with_decor(key.decor().clone()),
-        )
+        Key::new(trimmed.to_string()).with_decor(key.decor().clone())
     }
 }
 
@@ -179,12 +175,26 @@ impl TomlFormatter for TableFormatting {
             // Remove spaces from section key [ section ] -> [section]
             section_key.fmt();
 
+            println!("{:?}", section.decor());
+
             // Recursively iterate table key values and format them.
             self.fmt_table(section, 0);
-
+            
+            let prefix_comment = Self::get_comment(section.decor().prefix().unwrap_or_default());
+            let suffix_comment = Self::get_comment(section.decor().suffix().unwrap_or_default());            
+            
             // Assure section has no prefixes or suffixes.
             section.decor_mut().set_suffix("".to_string());
             section.decor_mut().set_prefix("".to_string());
+
+             // Adds back the comment that was trimmed during formatting.
+        if !prefix_comment.is_empty() {
+            Self::set_comment_suffix(&prefix_comment, section.decor_mut());
+        }
+
+        if !suffix_comment.is_empty() {
+            Self::set_comment_prefix(&suffix_comment, section.decor_mut());
+        }
         });
         Ok(())
     }
@@ -192,17 +202,23 @@ impl TomlFormatter for TableFormatting {
 
 impl TableFormatting {
     /// Visit the item and format its contained type.
-    fn visit_item(&self, item: &mut Item, depth: usize) {
+    fn visit_item(&self, key: &mut KeyMut, item: &mut Item, depth: usize) {
+        let trimmed_prefix = Self::fmt_prefix(key.decor_mut().prefix().unwrap());
+        key.decor_mut().set_prefix(trimmed_prefix);
+
         match item {
             Item::Value(value) => {
                 self.fmt_value(value);
+                key.decor_mut().set_suffix(" ");
             }
             Item::Table(table) => {
                 self.fmt_table(table, 0);
+                key.decor_mut().set_suffix("");
             }
             Item::ArrayOfTables(tables) => {
                 for table in tables.iter_mut() {
                     self.fmt_table(table, depth);
+                    key.decor_mut().set_suffix("");
                 }
             }
             Item::None => {}
@@ -212,7 +228,8 @@ impl TableFormatting {
     /// Iterate the value and recursively format its contained types.
     fn fmt_value(&self, value: &mut Value) {
         // Fetch comment if there is anyone after the value e.g ("key" = "value" # comment) will return '# comment'.
-        let comment = Self::get_comment(value.decor().suffix().unwrap_or_default());
+        let prefix_comment = Self::get_comment(value.decor().prefix().unwrap_or_default());
+        let suffix_comment = Self::get_comment(value.decor().suffix().unwrap_or_default());
 
         match value {
             Value::Array(array) => {
@@ -245,13 +262,20 @@ impl TableFormatting {
         }
 
         // Adds back the comment that was trimmed during formatting.
-        if !comment.is_empty() {
-            Self::set_comment_suffix(&comment, value.decor_mut());
+        if !suffix_comment.is_empty() {
+            Self::set_comment_suffix(&suffix_comment, value.decor_mut());
+        }
+
+        if !prefix_comment.is_empty() {
+            Self::set_comment_prefix(&prefix_comment, value.decor_mut());
         }
     }
 
     // Iterate array of `Values` and format them.
     fn fmt_array(&self, array: &mut Array) {
+        let prefix_comment = Self::get_comment(array.decor().prefix().unwrap_or_default());
+        let suffix_comment = Self::get_comment(array.decor().suffix().unwrap_or_default());
+
         for element in array.iter_mut() {
             self.fmt_value(element);
         }
@@ -260,19 +284,49 @@ impl TableFormatting {
 
         array.decor_mut().set_prefix(" ");
         array.decor_mut().set_suffix("");
+   
+        if !suffix_comment.is_empty() {
+            Self::set_comment_suffix(&suffix_comment, array.decor_mut());
+        }
+
+        if !prefix_comment.is_empty() {
+            Self::set_comment_prefix(&prefix_comment, array.decor_mut());
+        }
     }
 
     // Iterate table key values and recursively format them.
     fn fmt_table(&self, table: &mut Table, depth: usize) {
-        for (ref mut key, ref mut val) in table.iter_mut() {
-            key.fmt();
-            self.visit_item(val, depth);
+        for (ref mut key, ref mut val) in table.iter_mut() {            
+            self.visit_item(key, val, depth+1);
+        }
+    }
+
+    fn fmt_prefix (prefix: &str) -> String {
+        let trimmed = prefix.lines().into_iter().filter_map(|line| {
+            let trimmed = line.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(format!("{trimmed}"))
+            }
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+        if trimmed.is_empty() {
+            "".to_string()
+        } else {
+            format!("{}\n", trimmed)
         }
     }
 
     /// Strips the suffix from an item preserving comments.
     fn set_comment_suffix(suffix: &str, decor_mut: &mut Decor) {
         decor_mut.set_suffix(format!(" #{}", suffix));
+    }
+
+    /// Strips the suffix from an item preserving comments.
+    fn set_comment_prefix(suffix: &str, decor_mut: &mut Decor) {
+        decor_mut.set_prefix(format!(" #{}", suffix));
     }
 
     /// Returns the comment. if present, fetched by splitting the string at #.
