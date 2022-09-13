@@ -225,8 +225,7 @@ members = [
 fn format_toml() {
     let mut toml = CargoToml::default(TOML_BEFORE.to_string()).unwrap();
 
-    println!("{}", toml.toml_document.to_string());
     toml.format().unwrap();
-    println!("{}", toml.toml_document.to_string());
+
     assert_eq!(toml.toml_document.to_string(), TOML_AFTER);
 }

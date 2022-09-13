@@ -33,8 +33,6 @@ impl TomlFormatter for OrderSections {
 
         // Collect all section tables
         iter_sections_as_items(toml_document, |section_key, section_item| {
-            println!("section_key: {}", section_key);
-
             if let Some(section_table) = section_item.as_table() {
                 section_tables.insert(
                     section_key.get().to_string(),
@@ -57,8 +55,6 @@ impl TomlFormatter for OrderSections {
         // Iterate tables as they should be ordered.
         for ordered_section in all_sections {
             if let Some((section_key, section_table)) = array_of_tables.get(&ordered_section) {
-                println!("arrray of tables");
-
                 let mut new_tables = section_table.clone();
 
                 for table in new_tables.iter_mut() {
@@ -68,7 +64,7 @@ impl TomlFormatter for OrderSections {
 
                 toml_document.insert(section_key.get(), Item::ArrayOfTables(new_tables));
 
-                if let Some((mut k, v)) = toml_document.get_key_value_mut(section_key.get()) {
+                if let Some((mut k, _v)) = toml_document.get_key_value_mut(section_key.get()) {
                     k.decor_mut()
                         .set_prefix(section_key.decor().prefix().unwrap().to_string());
                     k.decor_mut()
@@ -119,11 +115,12 @@ impl TomlFormatter for OrderSections {
                         {
                             idx += 1;
                             table.set_position(idx);
-                            println!("{:?}", table.is_implicit());
                         } else if !subtable_has_pos && !section_has_pos {
                             if !table.is_implicit() {
                                 // Both section and sub table have no positions.
                                 panic!("Not possible")
+                            } else {
+                                // handle sorting `[target.my-special-i686-platform.dependencies]` like tables.
                             }
                         } else if !subtable_has_pos && section_has_pos {
                             // Sub table does not have any position.

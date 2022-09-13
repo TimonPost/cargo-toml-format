@@ -1,9 +1,4 @@
-use std::{collections::HashMap, hash::Hash};
-
-use cargo_toml_fmt::{
-    cargo_toml::CargoToml, package_order::TomlSection, toml_config::TomlFormatConfig,
-};
-use toml_edit::{Item, Key, KeyMut, Table, Value};
+use toml_edit::Table;
 
 /*
     [workspace] // pos 1

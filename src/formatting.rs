@@ -94,7 +94,7 @@ impl KeyQuoteTrimmer {
     }
 
     // Recursively iterate items and trim quotes from key names 'e.g' "key" = value -> key = value.
-    fn visit_item(item: &mut Item) {     
+    fn visit_item(item: &mut Item) {
         match item {
             Item::Value(value) => {
                 Self::visit_value(value);
@@ -174,27 +174,12 @@ impl TomlFormatter for TableFormatting {
         iter_sections_as_tables(toml_document, |section_key, section| {
             // Remove spaces from section key [ section ] -> [section]
             section_key.fmt();
-
-            println!("{:?}", section.decor());
+            section.decor_mut().set_suffix("");
 
             // Recursively iterate table key values and format them.
             self.fmt_table(section, 0);
-            
-            let prefix_comment = Self::get_comment(section.decor().prefix().unwrap_or_default());
-            let suffix_comment = Self::get_comment(section.decor().suffix().unwrap_or_default());            
-            
-            // Assure section has no prefixes or suffixes.
-            section.decor_mut().set_suffix("".to_string());
-            section.decor_mut().set_prefix("".to_string());
 
-             // Adds back the comment that was trimmed during formatting.
-        if !prefix_comment.is_empty() {
-            Self::set_comment_suffix(&prefix_comment, section.decor_mut());
-        }
-
-        if !suffix_comment.is_empty() {
-            Self::set_comment_prefix(&suffix_comment, section.decor_mut());
-        }
+            Self::fmt_prefix_and_preserve_comments(section.decor().prefix().unwrap_or_default());
         });
         Ok(())
     }
@@ -203,7 +188,8 @@ impl TomlFormatter for TableFormatting {
 impl TableFormatting {
     /// Visit the item and format its contained type.
     fn visit_item(&self, key: &mut KeyMut, item: &mut Item, depth: usize) {
-        let trimmed_prefix = Self::fmt_prefix(key.decor_mut().prefix().unwrap());
+        let trimmed_prefix =
+            Self::fmt_prefix_and_preserve_comments(key.decor_mut().prefix().unwrap());
         key.decor_mut().set_prefix(trimmed_prefix);
 
         match item {
@@ -228,8 +214,7 @@ impl TableFormatting {
     /// Iterate the value and recursively format its contained types.
     fn fmt_value(&self, value: &mut Value) {
         // Fetch comment if there is anyone after the value e.g ("key" = "value" # comment) will return '# comment'.
-        let prefix_comment = Self::get_comment(value.decor().prefix().unwrap_or_default());
-        let suffix_comment = Self::get_comment(value.decor().suffix().unwrap_or_default());
+        let (prefix_comment, suffix_comment) = Self::get_comments(value.decor());
 
         match value {
             Value::Array(array) => {
@@ -262,19 +247,12 @@ impl TableFormatting {
         }
 
         // Adds back the comment that was trimmed during formatting.
-        if !suffix_comment.is_empty() {
-            Self::set_comment_suffix(&suffix_comment, value.decor_mut());
-        }
-
-        if !prefix_comment.is_empty() {
-            Self::set_comment_prefix(&prefix_comment, value.decor_mut());
-        }
+        Self::set_comment(prefix_comment, suffix_comment, value.decor_mut());
     }
 
     // Iterate array of `Values` and format them.
     fn fmt_array(&self, array: &mut Array) {
-        let prefix_comment = Self::get_comment(array.decor().prefix().unwrap_or_default());
-        let suffix_comment = Self::get_comment(array.decor().suffix().unwrap_or_default());
+        let (prefix_comment, suffix_comment) = Self::get_comments(array.decor_mut());
 
         for element in array.iter_mut() {
             self.fmt_value(element);
@@ -284,38 +262,53 @@ impl TableFormatting {
 
         array.decor_mut().set_prefix(" ");
         array.decor_mut().set_suffix("");
-   
-        if !suffix_comment.is_empty() {
-            Self::set_comment_suffix(&suffix_comment, array.decor_mut());
-        }
 
-        if !prefix_comment.is_empty() {
-            Self::set_comment_prefix(&prefix_comment, array.decor_mut());
-        }
+        Self::set_comment(prefix_comment, suffix_comment, array.decor_mut());
     }
 
     // Iterate table key values and recursively format them.
     fn fmt_table(&self, table: &mut Table, depth: usize) {
-        for (ref mut key, ref mut val) in table.iter_mut() {            
-            self.visit_item(key, val, depth+1);
+        for (ref mut key, ref mut val) in table.iter_mut() {
+            self.visit_item(key, val, depth + 1);
         }
     }
 
-    fn fmt_prefix (prefix: &str) -> String {
-        let trimmed = prefix.lines().into_iter().filter_map(|line| {
-            let trimmed = line.trim();
-            if trimmed.is_empty() {
-                None
-            } else {
-                Some(format!("{trimmed}"))
-            }
-        })
-        .collect::<Vec<String>>()
-        .join("\n");
+    fn fmt_prefix_and_preserve_comments(prefix: &str) -> String {
+        let trimmed = prefix
+            .lines()
+            .into_iter()
+            .filter_map(|line| {
+                let trimmed = line.trim();
+                if trimmed.is_empty() {
+                    None
+                } else {
+                    Some(format!("{trimmed}"))
+                }
+            })
+            .collect::<Vec<String>>()
+            .join("\n");
+
         if trimmed.is_empty() {
             "".to_string()
         } else {
             format!("{}\n", trimmed)
+        }
+    }
+
+    fn get_comments(decor: &Decor) -> (String, String) {
+        let prefix_comment = Self::get_comment(decor.prefix().unwrap_or_default());
+        let suffix_comment = Self::get_comment(decor.suffix().unwrap_or_default());
+
+        (prefix_comment, suffix_comment)
+    }
+
+    fn set_comment(prefix_comment: String, suffix_comment: String, decor_mut: &mut Decor) {
+        if !suffix_comment.is_empty() {
+            Self::set_comment_suffix(&suffix_comment, decor_mut);
+        }
+
+        if !prefix_comment.is_empty() {
+            Self::set_comment_prefix(&prefix_comment, decor_mut);
         }
     }
 

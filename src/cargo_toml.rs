@@ -8,7 +8,7 @@ use crate::{
 
 use crate::toml_config::TomlFormatConfig;
 
-/// Simple attempt to structure formatting rules. 
+/// Simple attempt to structure formatting rules.
 /// Some formatting rules have to happen after other rules.
 #[derive(PartialEq, Clone, Copy)]
 pub enum FormattingStage {
@@ -17,12 +17,12 @@ pub enum FormattingStage {
     BeforeFormatting,
     /// At the same time, before or after document formatting.
     WhileFormatting,
-    /// After the formatting is performed. 
+    /// After the formatting is performed.
     /// Use this if the formatting logic is dependent upon length of lines for example.
     AfterFormatting,
 }
 
-/// The in memory representation of a Cargo.toml file. 
+/// The in memory representation of a Cargo.toml file.
 /// This is the main entry point for formatting a Cargo.toml file.
 pub struct CargoToml {
     pub toml_document: Document,
@@ -111,12 +111,12 @@ impl CargoToml {
         self.rules.push((true, stage, Box::from(rule)));
     }
 
-    /// Formats the toml document in memory. 
+    /// Formats the toml document in memory.
     /// This iterates all rules and applies rules in order of their stage.
     pub fn format(&mut self) -> anyhow::Result<()> {
         let mut toml_document = self.toml_document.clone();
 
-        let mut iter_stage = |filter_stage: FormattingStage| -> anyhow::Result<()>{
+        let mut iter_stage = |filter_stage: FormattingStage| -> anyhow::Result<()> {
             for (enabled, _, rule) in self
                 .rules
                 .iter_mut()
@@ -125,7 +125,7 @@ impl CargoToml {
                 if *enabled {
                     match rule.visit_document(&mut toml_document, &self.config) {
                         Ok(_) => {}
-                        Err(e) => return anyhow::bail!("Error: {:?}", e),
+                        Err(e) => anyhow::bail!("Error: {:?}", e),
                     }
                 }
             }

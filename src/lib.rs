@@ -27,9 +27,9 @@ pub trait TomlFormatter {
 fn iter_sections_as_tables<F: FnMut(&mut KeyMut, &mut Table)>(document: &mut Document, mut cb: F) {
     document
         .iter_mut()
-        .for_each(|(mut key, mut section)| match section {
-            Item::None => println!("none"),
-            Item::Value(_) => println!("value"),
+        .for_each(|(mut key, section)| match section {
+            Item::None => { /* should not occur */ }
+            Item::Value(_) => { /* should not occur */ }
             Item::Table(table) => {
                 cb(&mut key, table);
             }
@@ -42,7 +42,7 @@ fn iter_sections_as_tables<F: FnMut(&mut KeyMut, &mut Table)>(document: &mut Doc
 }
 
 fn iter_sections_as_items<F: FnMut(&Key, &Item)>(document: &mut Document, mut cb: F) {
-    document.iter().for_each(|(mut key, mut section)| {
+    document.iter().for_each(|(key, _section)| {
         let (section_key, section_item) = document.get_key_value(key).unwrap();
 
         cb(section_key, section_item);
@@ -53,7 +53,7 @@ fn iter_sections_as_items_mut<F: FnMut(&mut KeyMut, &mut Item)>(
     document: &mut Document,
     mut cb: F,
 ) {
-    document.iter_mut().for_each(|(mut key, mut section)| {
+    document.iter_mut().for_each(|(mut key, section)| {
         cb(&mut key, section);
     });
 }

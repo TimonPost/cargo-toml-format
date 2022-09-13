@@ -26,6 +26,7 @@ fn order_sections_to_manifest_spec() {
     [patch]
     [build-dependencies]
     [bench]
+    [bin]
     "#;
 
     let mut config = TomlFormatConfig::new();

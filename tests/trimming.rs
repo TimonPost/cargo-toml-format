@@ -57,9 +57,8 @@ d="d" # A description of the package.
 
     let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
-    println!("{}", toml.toml_document.to_string());
     toml.format().unwrap();
-    println!("{}", toml.toml_document.to_string());
+
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }
 
@@ -147,4 +146,3 @@ b = false
 
     assert_eq!(toml.toml_document.to_string(), AFTER);
 }
-

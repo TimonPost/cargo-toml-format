@@ -3,10 +3,10 @@ use std::io::Lines;
 use cargo_toml_fmt::{cargo_toml::CargoToml, toml_config::TomlFormatConfig};
 use toml_edit::Document;
 
-// iterate prefix lines. 
+// iterate prefix lines.
 // find comments in prefix Lines
 // preserve enters within comments.
-// preserve enters upto comments. 
+// preserve enters upto comments.
 
 // Key/value pairs within a table only have prefixes
 // Sections can have prefixes and suffixes.
@@ -15,7 +15,6 @@ use toml_edit::Document;
 
 #[test]
 fn mytest() {
-
     let toml_1 = r#"
     # test 1
     [a]
@@ -39,8 +38,6 @@ adep = "0.4.0"
 # test 3
     "#;
 
-
-
     // let mut config = TomlFormatConfig::new();
     // config.order_sections = true;
 
@@ -59,22 +56,27 @@ adep = "0.4.0"
             toml_edit::Item::None => todo!(),
             toml_edit::Item::Value(_) => todo!(),
             toml_edit::Item::Table(subtable) => {
-                println!("table {key} {:?} {:?}", subtable.decor().prefix(), subtable.decor().suffix());
+                println!(
+                    "table {key} {:?} {:?}",
+                    subtable.decor().prefix(),
+                    subtable.decor().suffix()
+                );
 
                 for (key, val) in &mut subtable.iter_mut() {
                     match val {
                         toml_edit::Item::None => todo!(),
                         toml_edit::Item::Value(value) => {
-                            println!("sub {key} {:?} {:?}", value.decor().prefix(), value.decor().suffix());
-                        },
-                        toml_edit::Item::Table(subtable) => {
-                           
-                        },
+                            println!(
+                                "sub {key} {:?} {:?}",
+                                value.decor().prefix(),
+                                value.decor().suffix()
+                            );
+                        }
+                        toml_edit::Item::Table(subtable) => {}
                         toml_edit::Item::ArrayOfTables(_) => todo!(),
                     }
                 }
-
-            },
+            }
             toml_edit::Item::ArrayOfTables(_) => todo!(),
         }
     }
