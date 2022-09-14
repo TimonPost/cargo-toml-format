@@ -1,4 +1,6 @@
+use cargo_toml_fmt::{toml_config::TomlFormatConfig, cargo_toml::CargoToml};
 use toml_edit::Table;
+use walkdir::WalkDir;
 
 /*
     [workspace] // pos 1
@@ -15,33 +17,38 @@ use toml_edit::Table;
     [bench.def] // pos 5
     d="1"
 */
-fn main() {}
+fn main() {test()}
 
-// fn test() {
-//     let paths = std::fs::read_dir("E:\\programming\\ark\\components\\").unwrap();
+fn test() {
+    let mut toml_paths = Vec::new();
 
-//     for path in paths {
-//         let toml_path = path.unwrap().path();
+    for entry in WalkDir::new("E:\\programming\\ark\\")
+            .follow_links(true)
+            .into_iter()
+            .filter_map(|e| e.ok()) {
+        let f_name = entry.file_name().to_string_lossy();
 
-//         let full_path = format!("{}\\Cargo.toml", toml_path.display());
-//         println!("Path: {}", full_path);
+        if f_name.contains("Cargo.toml") {
+            println!("{}", entry.path().display());
+            toml_paths.push(entry.path().display().to_string());
+        }
+    }
 
-//         if let Ok(toml_contents) = std::fs::read_to_string(full_path.clone()) {
-//             let after = "[workspace.test]";
+    for toml_path in toml_paths {
+        if let Ok(toml_contents) = std::fs::read_to_string(toml_path.clone()) {
+            let mut config = TomlFormatConfig::new();
+            config.order_sections = true;
 
-//             let mut config = TomlFormatConfig::new();
-//             config.order_package_section = true;
+            let mut toml = CargoToml::from_config(toml_contents, config).unwrap();
 
-//             let mut toml = CargoToml::new(toml_contents, config).unwrap();
+            toml.format();
 
-//             toml.format();
-
-//             std::fs::write(full_path, toml.toml_document.to_string());
-//         } else {
-//             println!("Failed to read file: {}", full_path);
-//         }
-//     }
-// }
+            std::fs::write(toml_path, toml.toml_document.to_string().trim_end_matches("\r"));
+        } else {
+            println!("Failed to read file: {}", toml_path);
+        }
+    }
+}
 
 pub fn debug_table(table: &Table) {
     println!("{}", table.to_string());

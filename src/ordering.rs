@@ -128,9 +128,23 @@ impl TomlFormatter for OrderSections {
                             panic!("Not possible")
                         }
                     }
-                });
+                });          
             }
         }
+
+        // if let Some(last) = toml_document.as_table_mut().iter_mut().last() {
+        //     if let Item::Table(table) = last.1 {
+        //         if let Some(last_item) =  table.iter_mut().last() {
+        //             if let Item::Table(table) = last_item.1 {                            
+        //                 table.decor_mut().set_suffix("\n");
+        //             }
+        //             if let Item::Value(value) = last_item.1 {                            
+        //                 value.decor_mut().set_suffix("\n");
+        //             }
+        //         }
+        //     }
+        // }
+
         Ok(())
     }
 }
