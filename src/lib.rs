@@ -4,6 +4,7 @@ pub mod ordering;
 pub mod package_order;
 pub mod toml_config;
 pub mod utils;
+pub mod verify;
 
 pub use formatting::{
     AppendLineAfterSection, InlineTableWrap, KeyQuoteTrimmer, KeyTrimmer, SectionKeyNameTrimmer,

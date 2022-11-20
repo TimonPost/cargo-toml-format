@@ -38,48 +38,12 @@ adep = "0.4.0"
 # test 3
     "#;
 
-    // let mut config = TomlFormatConfig::new();
-    // config.order_sections = true;
+    let mut config = TomlFormatConfig::new();
+    config.order_section_keys_by_group_alphabetically = true;
 
-    // let mut cargo = CargoToml::from_config(toml.to_string(), config).unwrap();
+    let mut cargo = CargoToml::from_config(toml.to_string(), config).unwrap();
 
-    // cargo.format().unwrap();
+    cargo.format().unwrap();
 
-    // println!("{}", cargo.toml_document);
-
-    let mut document = toml_3.parse::<Document>();
-    let mut document = document.unwrap();
-    let mut table = document.as_table_mut();
-
-    for (key, val) in &mut table.iter_mut() {
-        match val {
-            toml_edit::Item::None => todo!(),
-            toml_edit::Item::Value(_) => todo!(),
-            toml_edit::Item::Table(subtable) => {
-                println!(
-                    "table {key} {:?} {:?}",
-                    subtable.decor().prefix(),
-                    subtable.decor().suffix()
-                );
-
-                for (key, val) in &mut subtable.iter_mut() {
-                    match val {
-                        toml_edit::Item::None => todo!(),
-                        toml_edit::Item::Value(value) => {
-                            println!(
-                                "sub {key} {:?} {:?}",
-                                value.decor().prefix(),
-                                value.decor().suffix()
-                            );
-                        }
-                        toml_edit::Item::Table(subtable) => {}
-                        toml_edit::Item::ArrayOfTables(_) => todo!(),
-                    }
-                }
-            }
-            toml_edit::Item::ArrayOfTables(_) => todo!(),
-        }
-    }
-
-    println!("{:?}", table);
+    println!("{}", cargo.toml_document);
 }

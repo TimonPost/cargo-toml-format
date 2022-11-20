@@ -22,9 +22,6 @@ impl TomlFormatter for SectionKeyNameTrimmer {
     }
 }
 
-/// Trims empty spaces/lines/tabs around the table key's and appends a new line after the section per spec.
-///
-/// For example '\n\n[name]\n' -> '[name]\n'
 pub struct KeyTrimmer;
 
 impl TomlFormatter for KeyTrimmer {
@@ -44,12 +41,6 @@ impl TomlFormatter for KeyTrimmer {
     }
 }
 
-/// Trims quotes around table keys.
-///
-/// For example: "a" = "b" -> a = "b"
-///
-/// - Preserves order
-/// - Preserves formatting
 pub struct KeyQuoteTrimmer;
 
 impl TomlFormatter for KeyQuoteTrimmer {
@@ -174,12 +165,16 @@ impl TomlFormatter for TableFormatting {
         iter_sections_as_tables(toml_document, |section_key, section| {
             // Remove spaces from section key [ section ] -> [section]
             section_key.fmt();
+
             section.decor_mut().set_suffix("");
 
             // Recursively iterate table key values and format them.
             self.fmt_table(section, 0);
 
-            Self::fmt_prefix_and_preserve_comments(section.decor().prefix().unwrap_or_default());
+            let prefix = Self::fmt_prefix_and_preserve_comments(
+                section.decor().prefix().unwrap_or_default(),
+            );
+            section.decor_mut().set_prefix(prefix);
         });
         Ok(())
     }
@@ -403,9 +398,7 @@ impl WrapArray {
             array
                 .iter_mut()
                 .last()
-                .unwrap()
-                .decor_mut()
-                .set_suffix("\n");
+                .map(|l| l.decor_mut().set_suffix("\n"));
         }
     }
 }

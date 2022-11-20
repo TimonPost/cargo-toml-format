@@ -1,5 +1,6 @@
 use toml_edit::{Document, Item};
 
+use crate::ordering::OrderSectionKeysByGroupAlphabetically;
 use crate::{
     AppendLineAfterSection, InlineTableWrap, KeyQuoteTrimmer, KeyTrimmer, OrderDependencies,
     OrderPackageSection, OrderSections, OrderTableKeysAlphabetically, SectionKeyNameTrimmer,
@@ -64,22 +65,25 @@ impl CargoToml {
             toml.add_format_rule(FormattingStage::BeforeFormatting, OrderPackageSection);
         }
 
-        if config.order_table_keys {
+        if config.order_table_keys_alphabetically {
             toml.add_format_rule(
                 FormattingStage::BeforeFormatting,
                 OrderTableKeysAlphabetically,
             );
         }
 
-        if config.order_dependencies.is_some() {
+        if config.order_section_keys_by_group_alphabetically {
+            toml.add_format_rule(FormattingStage::BeforeFormatting, OrderSectionKeysByGroupAlphabetically);
+        }
+        if config.order_dependencies_alphabetically {
             toml.add_format_rule(FormattingStage::BeforeFormatting, OrderDependencies);
         }
 
-        if config.trim_key_quotes {
+        if config.trim_quotes_table_keys {
             toml.add_format_rule(FormattingStage::BeforeFormatting, KeyQuoteTrimmer);
         }
 
-        if config.trim_all_keys {
+        if config.trim_section_item_keys {
             toml.add_format_rule(FormattingStage::BeforeFormatting, KeyTrimmer);
         }
 

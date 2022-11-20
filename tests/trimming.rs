@@ -53,7 +53,7 @@ d="d" # A description of the package.
 "#;
 
     let mut config = TomlFormatConfig::new();
-    config.trim_all_keys = true;
+    config.trim_section_item_keys = true;
 
     let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
@@ -79,7 +79,7 @@ fn trims_quotes_from_keys() {
     "#;
 
     let mut config = TomlFormatConfig::new();
-    config.trim_key_quotes = true;
+    config.trim_quotes_table_keys = true;
 
     let mut toml = CargoToml::from_config(BEFORE.to_string(), config).unwrap();
 
@@ -118,19 +118,52 @@ d = [] # A description of the package.
 fn comments_stress_test() {
     const BEFORE: &str = r#"[a] 
     # comment 1
-    a = { a = "b" } 
+    a = { a = "b" }  # comment 2
 
 
     # comment 2
 
     b = false
+    # comment 1
+
+    # comment 3
+c = [""]
+
+    d = [""] # comment 4
+    [b]
+    # comment 1
+    a = { a = "b" }  # comment 2
+
+
+    # comment 2
+
+    b = false
+    # comment 1
+
+    # comment 3
+c = [""]
+
+    d = [""] # comment 4
     "#;
 
     const AFTER: &str = r#"[a]
 # comment 1
-a = { a = "b" }
+a = { a = "b" } # comment 2
 # comment 2
 b = false
+# comment 1
+# comment 3
+c = [""]
+d = [""] # comment 4
+[b]
+# comment 1
+a = { a = "b" } # comment 2
+# comment 2
+b = false
+# comment 1
+# comment 3
+c = [""]
+d = [""] # comment 4
     "#;
 
     let mut config = TomlFormatConfig::new();

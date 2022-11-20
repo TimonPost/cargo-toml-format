@@ -1,7 +1,13 @@
-use std::{cmp::Ordering, collections::HashMap, str::FromStr};
+use std::{
+    cmp::Ordering,
+    collections::{BTreeMap, HashMap, HashSet},
+    iter::FromIterator,
+    ops::Index,
+    str::FromStr,
+};
 
 use strum::EnumProperty;
-use toml_edit::{ArrayOfTables, Document, Item, Key, Table, Value};
+use toml_edit::{ArrayOfTables, Decor, Document, Item, Key, Table, Value};
 
 use crate::{
     iter_sections_as_items, iter_sections_as_items_mut,
@@ -12,9 +18,7 @@ use crate::{
 
 use super::TomlFormatter;
 
-/// Order sections in the toml document according to the [manifest's][1] order.
 ///
-/// [1]: https://doc.rust-lang.org/cargo/reference/manifest.html
 pub struct OrderSections;
 
 impl TomlFormatter for OrderSections {
@@ -29,7 +33,22 @@ impl TomlFormatter for OrderSections {
 
         let mut section_tables = HashMap::<String, (Key, Table)>::new();
         let mut array_of_tables = HashMap::<String, (Key, ArrayOfTables)>::new();
-        let all_sections = TomlSection::manifest_spec();
+
+        let mut manifest_sections = TomlSection::manifest_spec();
+        let mut sections_from_config = config.custom_section_order.clone();
+
+        // Remove any manifest section if custom ordering is needed for it.
+        for section in &sections_from_config {
+            manifest_sections
+                .iter()
+                .position(|n| n == section)
+                .map(|e| manifest_sections.remove(e));
+        }
+
+        // Add the left over sections from the manifest to the end of the custom ordering.
+        for section in manifest_sections {
+            sections_from_config.push(section);
+        }
 
         // Collect all section tables
         iter_sections_as_items(toml_document, |section_key, section_item| {
@@ -53,7 +72,7 @@ impl TomlFormatter for OrderSections {
         let mut idx = 0;
 
         // Iterate tables as they should be ordered.
-        for ordered_section in all_sections {
+        for ordered_section in sections_from_config {
             if let Some((section_key, section_table)) = array_of_tables.get(&ordered_section) {
                 let mut new_tables = section_table.clone();
 
@@ -128,17 +147,17 @@ impl TomlFormatter for OrderSections {
                             panic!("Not possible")
                         }
                     }
-                });          
+                });
             }
         }
 
         // if let Some(last) = toml_document.as_table_mut().iter_mut().last() {
         //     if let Item::Table(table) = last.1 {
         //         if let Some(last_item) =  table.iter_mut().last() {
-        //             if let Item::Table(table) = last_item.1 {                            
+        //             if let Item::Table(table) = last_item.1 {
         //                 table.decor_mut().set_suffix("\n");
         //             }
-        //             if let Item::Value(value) = last_item.1 {                            
+        //             if let Item::Value(value) = last_item.1 {
         //                 value.decor_mut().set_suffix("\n");
         //             }
         //         }
@@ -149,9 +168,7 @@ impl TomlFormatter for OrderSections {
     }
 }
 
-/// Order the package section according to the [manifest's][1] order.
-///
-/// [1]: https://doc.rust-lang.org/cargo/reference/manifest.html
+/// See documentation on [crate::TomlFormatConfig::order_package_section].
 pub struct OrderPackageSection;
 
 impl TomlFormatter for OrderPackageSection {
@@ -201,12 +218,15 @@ impl TomlFormatter for OrderTableKeysAlphabetically {
     fn visit_document(
         &mut self,
         toml_document: &mut Document,
-        _config: &TomlFormatConfig,
+        config: &TomlFormatConfig,
     ) -> anyhow::Result<()> {
         iter_sections_as_items_mut(toml_document, |section_key, item| {
-            if section_key.get() != "package" {
+            if !config
+                .exclude_tables_from_ordering
+                .contains(&section_key.get().to_string())
+            {
                 // package section is sorted according to the manifest order and not alphabetically.
-                Self::order_item(item);
+                Self::order_item(item, config);
             }
         });
 
@@ -215,22 +235,32 @@ impl TomlFormatter for OrderTableKeysAlphabetically {
 }
 
 impl OrderTableKeysAlphabetically {
-    pub fn order_item(item: &mut Item) {
+    pub fn order_item(item: &mut Item, config: &TomlFormatConfig) {
         match item {
             Item::None => todo!(),
             Item::Value(value) => Self::order_value(value),
-            Item::Table(table) => Self::order_table(table),
+            Item::Table(table) => Self::order_table(table, config),
             Item::ArrayOfTables(tables) => tables.iter_mut().for_each(|table| {
-                Self::order_table(table);
+                Self::order_table(table, config);
             }),
         }
     }
 
-    pub fn order_table(table: &mut Table) {
-        table.sort_values_by(|key_1, _, key_2, _| key_1.get().cmp(&key_2.get()));
+    pub fn order_table(table: &mut Table, config: &TomlFormatConfig) {
+        table.sort_values_by(|key_1, val1, key_2, val2| {
+            if config
+                .exclude_keys_from_ordering
+                .iter()
+                .any(|e| key_1.contains(e) || key_2.contains(e))
+            {
+                Ordering::Equal
+            } else {
+                key_1.get().cmp(&key_2.get())
+            }
+        });
 
         table.iter_mut().for_each(|(_, value)| {
-            Self::order_item(value);
+            Self::order_item(value, config);
         })
     }
 
@@ -263,6 +293,10 @@ impl TomlFormatter for OrderDependencies {
         toml_document: &mut Document,
         config: &TomlFormatConfig,
     ) -> anyhow::Result<()> {
+        if !config.order_dependencies_alphabetically {
+            return Ok(());
+        }
+
         let dependencies = toml_document
             .get_mut("dependencies")
             .ok_or_else(|| anyhow::anyhow!("Dependencies tag not found in toml document"))?;
@@ -279,48 +313,7 @@ impl OrderDependencies {
         dependencies: &mut Item,
         config: &TomlFormatConfig,
     ) -> anyhow::Result<()> {
-        let dependency_sorts = if let Some(dependency_sorts) = &config.order_dependencies {
-            dependency_sorts
-        } else {
-            return Ok(());
-        };
-
         if let Item::Table(ref mut dependencies) = dependencies {
-            let alphabetical_sort_enable = dependency_sorts
-                .iter()
-                .filter(|d| *d == &TomlSort::Alphabetical)
-                .count()
-                > 0;
-            let length_sort_enable = dependency_sorts
-                .iter()
-                .filter(|d| *d == &TomlSort::Length)
-                .count()
-                > 0;
-
-            fn len_sort(
-                key_1: &Key,
-                item_1: &Item,
-                key_2: &Key,
-                item_2: &Item,
-            ) -> std::cmp::Ordering {
-                let key_1_count = key_1.get().char_indices().count();
-                let key_2_count = key_2.get().char_indices().count();
-
-                let item_1_len = item_len(item_1);
-                let item_2_len = item_len(item_2);
-
-                let entry_1_len = key_1_count + item_1_len;
-                let entry_2_len = key_2_count + item_2_len;
-
-                if entry_1_len < entry_2_len {
-                    std::cmp::Ordering::Less
-                } else if entry_1_len > entry_2_len {
-                    std::cmp::Ordering::Greater
-                } else {
-                    std::cmp::Ordering::Equal
-                }
-            }
-
             fn alphabetical_sort(
                 key_1: &Key,
                 _: &Item,
@@ -330,49 +323,89 @@ impl OrderDependencies {
                 key_1.get().to_lowercase().cmp(&key_2.get().to_lowercase())
             }
 
-            if alphabetical_sort_enable && !length_sort_enable {
-                dependencies.sort_values_by(|key_1, _item_1, key_2, _item_2| {
-                    alphabetical_sort(key_1, _item_1, key_2, _item_2)
-                });
-            }
-
-            if alphabetical_sort_enable && length_sort_enable {
-                dependencies.sort_values_by(|key_1, item_1, key_2, item_2| {
-                    let alphabetic_order = alphabetical_sort(key_1, item_1, key_2, item_2);
-                    let length_order = len_sort(key_1, item_1, key_2, item_2);
-
-                    match alphabetic_order {
-                        std::cmp::Ordering::Less => {
-                            if length_order == std::cmp::Ordering::Less {
-                                std::cmp::Ordering::Less
-                            } else {
-                                std::cmp::Ordering::Greater
-                            }
-                        }
-                        std::cmp::Ordering::Equal => {
-                            if length_order == std::cmp::Ordering::Less {
-                                std::cmp::Ordering::Less
-                            } else {
-                                std::cmp::Ordering::Greater
-                            }
-                        }
-                        std::cmp::Ordering::Greater => {
-                            if length_order == std::cmp::Ordering::Less {
-                                std::cmp::Ordering::Less
-                            } else {
-                                std::cmp::Ordering::Greater
-                            }
-                        }
-                    }
-                });
-            }
-
-            if length_sort_enable && !alphabetical_sort_enable {
-                dependencies.sort_values_by(|key_1, item_1, key_2, item_2| {
-                    len_sort(key_1, item_1, key_2, item_2)
-                });
-            }
+            dependencies.sort_values_by(|key_1, _item_1, key_2, _item_2| {
+                alphabetical_sort(key_1, _item_1, key_2, _item_2)
+            });
         }
+
+        Ok(())
+    }
+}
+
+pub struct OrderSectionKeysByGroupAlphabetically;
+
+impl TomlFormatter for OrderSectionKeysByGroupAlphabetically {
+    fn visit_document(
+        &mut self,
+        toml_document: &mut Document,
+        config: &TomlFormatConfig,
+    ) -> anyhow::Result<()> {
+        if !config.order_section_keys_by_group_alphabetically {
+            return Ok(());
+        }
+
+        iter_sections_as_items_mut(toml_document, |section_key, item| {
+            if section_key.get() == "package" {
+                return;
+            }
+
+            if let Item::Table(table) = item {
+                let table_clone = table.clone();
+
+                // The groups separated by white space.
+                let mut groups = BTreeMap::new();
+                // Stores the first entry of the group to preserve the prefix decor.
+                let mut group_header = HashMap::new();
+
+                let mut group_idx = 0;
+
+                for (idx, (mut table_key, table_value)) in table_clone
+                    .iter()
+                    .map(|(table_key, _)| table.remove_entry(table_key).unwrap())
+                    .enumerate()
+                {
+                    let table_key_decor = table_key.decor_mut();
+                    
+                    // A group exists if there is at least one blank line between two keys.
+
+                    let blank_lines = table_key_decor
+                        .prefix()
+                        .map(|prefix| prefix.lines().filter(|l| !l.starts_with('#')).count())
+                        .unwrap_or(0);
+
+                    if blank_lines > 0 {                     
+                        // We may need the the original decor for the top sorted item of the group.
+                        group_header.insert(idx, table_key_decor.clone());
+                        
+                           // Reset the prefix since a new entry of the group may be sorted to the top.
+                           table_key_decor.set_prefix("");
+
+                        groups.entry(idx).or_insert_with(|| vec![(table_key, table_value)]);
+                        group_idx = idx;
+                    } else {                    
+                        if !groups.contains_key(&group_idx) {
+                            group_header.insert(group_idx, table_key_decor.clone());
+                        }
+
+                        groups.entry(group_idx).or_default().push((table_key, table_value));
+                    }
+                }
+
+                for (idx, group) in groups.iter_mut() {
+                    group.sort_by(|a, b| a.0.cmp(&b.0));
+
+                    for (i, (key, value)) in group.iter_mut().enumerate() {
+                        // Only apply the original group header to the first item of the group.
+                        if i == 0 {
+                            let original_decor = group_header.get(idx).unwrap();
+                            key.decor_mut().set_prefix(original_decor.prefix().unwrap_or(""));
+                        }
+
+                        table.insert_formatted(&key, value.clone());
+                    }
+                }
+            }
+        });
 
         Ok(())
     }

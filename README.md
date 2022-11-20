@@ -24,6 +24,13 @@ Formatting rules are defined by the rust FMT RFC [^1] and cargo manifest [^2].
 - [X] Section header and the first following keys should NOT be separated by space.
 - [X] Sections are separated by a single newline.
 
+### Comments
+
+- [x] If the comment is inline, on the same line as an item, it should be separated from the item by one space.
+- [x] Arrays where each line is wrapped on a new line may contain comments at the line ending to elaborate on certain array items.
+- [ ] Arrays where each line is wrapped on a new line may contain comments as entries to elaborate on certain arrray items.
+
+
 ## Keys
 
 - [X] Keys within sections have no spaces in between them.
@@ -75,11 +82,17 @@ While there is similar work it was not what I was looking for.
 - Add binary functionality with file configuration in yml format.
 - Create linter.
 
+- Add grouping support for ordering dependencies.
+- section key trimmer removes space from key assignment
+- section quote trimmer removes comments
+- array formatting removes comments.
+
+
+
 Needs validation
 - table formatting section trim?
 - validate section comments do not get stripped
-- validate that array comments do not get stripped
-- format table before wrapping
+- 
 
 [^1]: https://github.com/rust-dev-tools/fmt-rfcs/blob/master/guide/cargo.md?rgh-link-date=2020-04-11T05%3A30%3A22Z
 [^2]: https://doc.rust-lang.org/cargo/reference/manifest.html

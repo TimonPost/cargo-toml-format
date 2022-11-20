@@ -35,39 +35,39 @@ pub enum TomlSort {
     EnumVariantNames,
 )]
 pub enum TomlSection {
-    #[strum(serialize = "package", props(order = "a"))]
+    #[strum(serialize = "package")]
     Package,
-    #[strum(serialize = "lib", props(order = "b"))]
+    #[strum(serialize = "lib")]
     Lib,
-    #[strum(serialize = "bin", props(order = "c"))]
+    #[strum(serialize = "bin")]
     Bins,
-    #[strum(serialize = "example", props(order = "d"))]
+    #[strum(serialize = "example")]
     Example,
-    #[strum(serialize = "test", props(order = "e"))]
+    #[strum(serialize = "test")]
     Test,
-    #[strum(serialize = "bench", props(order = "f"))]
+    #[strum(serialize = "bench")]
     Bench,
-    #[strum(serialize = "dependencies", props(order = "g"))]
+    #[strum(serialize = "dependencies")]
     Dependencies,
-    #[strum(serialize = "dev-dependencies", props(order = "h"))]
+    #[strum(serialize = "dev-dependencies")]
     DevDependencies,
-    #[strum(serialize = "build-dependencies", props(order = "i"))]
+    #[strum(serialize = "build-dependencies")]
     BuildDependencies,
-    #[strum(serialize = "target", props(order = "j"))]
+    #[strum(serialize = "target")]
     Target,
-    #[strum(serialize = "badges", props(order = "k"))]
+    #[strum(serialize = "badges")]
     Badges,
-    #[strum(serialize = "features", props(order = "l"))]
+    #[strum(serialize = "features")]
     Features,
-    #[strum(serialize = "patch", props(order = "m"))]
+    #[strum(serialize = "patch")]
     Patch,
-    #[strum(serialize = "replace", props(order = "n"))]
+    #[strum(serialize = "replace")]
     Replace,
-    #[strum(serialize = "profile", props(order = "o"))]
+    #[strum(serialize = "profile")]
     Profile,
-    #[strum(serialize = "workspace", props(order = "p"))]
+    #[strum(serialize = "workspace")]
     Workspace,
-    #[strum(serialize = "cargo-features", props(order = "q"))]
+    #[strum(serialize = "cargo-features")]
     CargoFeatures,
 }
 
