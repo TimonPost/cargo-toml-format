@@ -33,7 +33,8 @@ Formatting rules are defined by the rust FMT RFC [^1] and cargo manifest [^2].
 
 ## Keys
 
-- [X] Keys within sections have no spaces in between them.
+- [X] Keys within sections have no spaces in between them except for the usecase of grouping.
+- [x] Groups in sections are defined by a single white space. 
 - [X] Keys may not contain quotes.
 - [x] Keys are separated from a value by ` = `
 - [x] Keys may not contain quotes (unless it is required for a particular reason)
