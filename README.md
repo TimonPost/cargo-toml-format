@@ -1,7 +1,7 @@
 # Cargo Toml Formatting Tool
 
 This is an in-progress, non-production-ready, comments-preserving, cargo TOML file formatting library.
-See the lists below for detailed information on what formatting is supported.
+See the lists below for detailed information on what formatting is supported. 
 
 ## Definitions
 
@@ -15,7 +15,7 @@ First, the definitions used in this document.
 
 ## Formatting Rules
 
-Formatting rules are defined by the rust FMT RFC [^1] and cargo manifest [^2].
+Formatting rules are defined by the rust FMT RFC [^1] and cargo manifest [^2]. However, there maybe rules here that do not conform or are not yet stabalized as 'official'.
 
 ### Sections
 
