@@ -3,6 +3,10 @@
 This is an in-progress, non-production-ready, comments-preserving, cargo TOML file formatting library.
 See the lists below for detailed information on what formatting is supported. 
 
+## How to use
+
+You can use this tool, its not a cargo published binary yet, see `main.rs` or the tests as examples on how to use this library from code. There are test for all cases that are guaranteed to work. However, sorting/ordering/formatting does require a certain order in order to work properly. Adviced is to do your toml formatting in phases rather then all features at once. 
+
 ## Definitions
 
 First, the definitions used in this document.
