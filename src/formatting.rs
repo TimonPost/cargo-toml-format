@@ -405,14 +405,14 @@ impl WrapArray {
 
 /// If a root-level key-value pair is to long, create the table as a separate section.
 ///
-/// ```
+/// ```toml
 /// [dependency]
 /// a = {version="0.4.1", path="some_very_long_path_to_directory", git="https://github.come/some_weird_long_repository_name"}
 /// ```
 ///
 /// to
 ///
-/// ```
+/// ```toml
 /// [dependency.a]
 /// version="0.4.1"
 /// path="some_very_long_path_to_directory"
