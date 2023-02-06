@@ -18,7 +18,7 @@ fn mytest() {
     let toml_1 = r#"
     # test 1
     [a]
-    adep = "0.4.0"#;
+    adep = "0.4.0""#;
 
     let toml_2 = r#"    
     [a]
@@ -41,7 +41,7 @@ adep = "0.4.0"
     let mut config = TomlFormatConfig::new();
     config.order_section_keys_by_group_alphabetically = true;
 
-    let mut cargo = CargoToml::from_config(toml.to_string(), config).unwrap();
+    let mut cargo = CargoToml::from_config(toml_1.to_string(), config).unwrap();
 
     cargo.format().unwrap();
 
