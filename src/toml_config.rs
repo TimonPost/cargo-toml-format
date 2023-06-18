@@ -7,7 +7,7 @@ pub struct TomlFormatConfig {
     /// Order sections in the toml document according to the [manifest's][1] order.
     ///
     /// ## Example
-    /// ```
+    /// ```toml
     /// [[bin]]
     /// bench = false
     /// name = "cool-tool"
@@ -25,7 +25,7 @@ pub struct TomlFormatConfig {
     ///
     /// To:
     ///
-    /// ```
+    /// ```toml
     /// [package]
     /// name = "some-crate"
     /// version = "0.0.0"
@@ -54,7 +54,7 @@ pub struct TomlFormatConfig {
 
     /// Order the package section items according to the [manifest's][1] order.
     ///
-    /// ```
+    /// ```toml
     /// [package]
     /// version = "0.0.0"
     /// rust-version = "1.6.3.0"
@@ -64,7 +64,7 @@ pub struct TomlFormatConfig {
     /// ```
     /// TO:
     ///
-    /// ```
+    /// ```toml
     /// [package]
     /// name = "some-crate"
     /// version = "0.0.0"
@@ -77,7 +77,7 @@ pub struct TomlFormatConfig {
 
     //// Order table keys alphabetically.
     ///
-    /// ```
+    /// ```toml
     /// [some-table]
     /// b = "b"
     /// c = "c"
@@ -86,7 +86,7 @@ pub struct TomlFormatConfig {
     ///
     /// TO:
     ///
-    /// ```
+    /// ```toml
     /// [some-table]
     /// a = "a"
     /// b = "b"
@@ -96,7 +96,7 @@ pub struct TomlFormatConfig {
     /// Order the section keys, except from package, by group then alphabetically. 
     /// A group is defined by a white space after an table item. Comments are skipped when counting whitespaces. 
     /// 
-    ///  /// ```
+    /// ```toml
     /// [some-table] 
     /// c = "b"         # <-- group 1 start
     /// a = "c"
@@ -111,7 +111,7 @@ pub struct TomlFormatConfig {
     /// ```
     ///
     /// TO:
-    /// ```
+    /// ```toml
     /// [some-table]
     /// a = "a"
     /// c = "a"
@@ -132,20 +132,20 @@ pub struct TomlFormatConfig {
 
     /// Trims empty spaces around the section names.
     ///
-    /// ```
+    /// ```toml
     /// [ package ]
     /// ```
     ///
     /// TO:
     ///
-    /// ```
+    /// ```toml
     /// [package]
     /// ```
     pub trim_section_key_names: bool,
 
     /// Trims empty spaces around to level section items their keys.
     ///
-    /// ```
+    /// ```toml
     /// [package]
     /// a = "a"
     ///
@@ -157,7 +157,7 @@ pub struct TomlFormatConfig {
     ///
     /// TO:
     ///
-    /// ```
+    /// ```toml
     /// [package]
     /// a = "a"
     /// b = "b"
@@ -168,12 +168,12 @@ pub struct TomlFormatConfig {
 
     /// Trims quotes from table keys.
     ///
-    /// ```
+    /// ```toml
     /// [package]
     /// "a" = {"a"="a"}
     /// ```
     /// TO
-    /// ```
+    /// ```toml
     /// [package]
     /// a = {a="a"}
     /// ```
